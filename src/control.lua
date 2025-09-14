@@ -1,1 +1,1 @@
-require("script.input")
+require("script.coupling")

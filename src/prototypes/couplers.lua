@@ -1,5 +1,5 @@
 data:extend({{
-    type = "simple-entity",
+    type = "simple-entity-with-owner",
     name = "ftrainworks-coupler",
     hidden = true,
 
@@ -27,6 +27,7 @@ data:extend({{
     flags = {
         "placeable-neutral",
         "placeable-player",
+        "placeable-off-grid",
         "not-rotatable",
         "not-repairable",
         "not-on-map",
@@ -39,5 +40,5 @@ data:extend({{
     },
     icon = "__base__/graphics/icons/steel-chest.png", -- placeholder icon
     minable = {mining_time = math.huge},
-    selection_box = {{-0.5, -0.5}, {0.5, 0.5}},
+    selection_box = {{-0.35, -0.35}, {0.35, 0.35}}
 }});
