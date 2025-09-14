@@ -1,0 +1,56 @@
+name: Feature Request
+description: Suggest a change or new idea for the Trainworks & Couplers mod.
+title: "[FR] "
+labels: ["CAT: Feature Request", "ATN: Needs Attention"]
+body:
+- type: markdown
+  attributes:
+    value: |
+      Thanks for taking the time to improve Trainworks & Couplers!
+- type: textarea
+  id: description
+  attributes:
+    label: "Feature Description"
+    description: "Please describe the idea in as much detail as possible."
+  validations:
+    required: true
+- type: dropdown
+  id: complexity
+  attributes:
+    label: "Perceived Complexity"
+    description: "Please estimate how complex you think this feature would be to implement."
+    options:
+    - "High Time Investment (Major refactoring; Many parts affected)"
+    - "Moderate Time Investment (Some refactoring; Some parts affected)"
+    - "Low Time Investment (Little refactoring; Few parts affected)"
+    - "No Time Investment (Quick change; One or no parts affected)"
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: "Motivation and Importance"
+    description: "Please explain the motivation for the feature and why it's important."
+  validations:
+    required: true
+- type: textarea
+  id: additional
+  attributes:
+    label: "Additional Info"
+    description: "Anything else you want us to know about your idea?"
+    placeholder: "N/A"
+  validations:
+    required: false
+- type: checkboxes
+  id: requirements
+  attributes:
+    label: "Issue Requirements"
+    description: "Failure to do these things may result in the removal of your issue."
+    options:
+    - label: "Your title is professional."
+      required: true
+    - label: "Your title is properly capitalized."
+      required: true
+    - label: "Your post uses full sentences, proper grammar, and punctuation."
+      required: true
+  validations:
+    required: true
