@@ -1,0 +1,13 @@
+{
+    "name": "ftrainworks",
+    "version": "1.0.0",
+    "title": "__LOCALIZED_VALUE__",
+    "description": "__LOCALIZED_VALUE__",
+    "author": "FireController#1847",
+    "contact": "https://github.com/FireController1847/ftrainworks/issues",
+    "homepage": "https://github.com/FireController1847/ftrainworks/",
+    "factorio_version": "2.0",
+    "dependencies": [
+        "base >= 2.0"
+    ]
+}
