@@ -1,0 +1,15 @@
+{
+    "Lua.diagnostics.globals": [
+        "data",
+        "script",
+        "defines",
+        "util",
+        "rendering",
+        "game",
+        "serpent",
+        "storage",
+        "helpers",
+        "make_rotated_animation_variations_from_sheet",
+        "prototypes"
+    ]
+}

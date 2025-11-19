@@ -1,6 +1,8 @@
 local hit_effects = require("__base__.prototypes.entity.hit-effects")
+local sounds = require("__base__.prototypes.entity.sounds")
 
-data:extend({{
+data:extend({
+  {
     type = "simple-entity-with-owner",
     name = "ftrainworks-coupler",
     hidden = true,
@@ -54,9 +56,62 @@ data:extend({{
     pickup_position = {0, -1},
     insert_position = {0, 1.2},
     rotation_speed = 0.014,
+    circuit_connector = circuit_connector_definitions["inserter"],
+    circuit_wire_max_distance = inserter_circuit_wire_max_distance,
     energy_per_movement = "5kJ",
     energy_per_rotation = "5kJ",
-    circuit_wire_max_distance = inserter_circuit_wire_max_distance,
+    hand_base_picture = {
+        filename = "__ftrainworks__/graphics/entity/coupler-inserter/coupler-inserter-hand-base.png",
+        priority = "extra-high",
+        width = 32,
+        height = 136,
+        scale = 0.25
+    },
+    hand_base_shadow ={
+      filename = "__base__/graphics/entity/burner-inserter/burner-inserter-hand-base-shadow.png",
+      priority = "extra-high",
+      width = 32,
+      height = 132,
+      scale = 0.25
+    },
+    hand_closed_picture = {
+      filename = "__ftrainworks__/graphics/entity/coupler-inserter/coupler-inserter-hand-closed.png",
+      priority = "extra-high",
+      width = 72,
+      height = 164,
+      scale = 0.25
+    },
+    hand_closed_shadow = {
+      filename = "__base__/graphics/entity/burner-inserter/burner-inserter-hand-closed-shadow.png",
+      priority = "extra-high",
+      width = 72,
+      height = 164,
+      scale = 0.25
+    },
+    hand_open_picture = {
+      filename = "__ftrainworks__/graphics/entity/coupler-inserter/coupler-inserter-hand-open.png",
+      priority = "extra-high",
+      width = 72,
+      height = 164,
+      scale = 0.25
+    },
+    hand_open_shadow = {
+      filename = "__base__/graphics/entity/burner-inserter/burner-inserter-hand-open-shadow.png",
+      priority = "extra-high",
+      width = 72,
+      height = 164,
+      scale = 0.25
+    },
+    platform_picture = {
+      sheet = {
+        filename = "__ftrainworks__/graphics/entity/coupler-inserter/coupler-inserter-platform.png",
+        priority = "extra-high",
+        width = 105,
+        height = 79,
+        shift = util.by_pixel(1.5, 7.5-1),
+        scale = 0.5
+      }
+    },
 
     -- EntityWithHealthPrototype
     damaged_trigger_effect = hit_effects.entity(),
@@ -67,6 +122,7 @@ data:extend({{
     },
 
     -- EntityPrototype
+    close_sound = sounds.inserter_close,
     collision_box = {{-0.15, -0.15}, {0.15, 0.15}},
     flags = {
         "placeable-neutral",
@@ -74,9 +130,65 @@ data:extend({{
         "player-creation"
     },
     icon = "__ftrainworks__/graphics/icons/coupler-inserter.png",
+    impact_category = "metal",
     minable = {
         mining_time = 0.435,
         result = "ftrainworks-coupler-inserter"
     },
+    open_sound = sounds.inserter_open,
     selection_box = {{-0.4, -0.35}, {0.4, 0.45}},
-}});
+    working_sound = sounds.inserter_basic
+  },
+  {
+    type = "item",
+    name = "ftrainworks-coupler-target",
+
+    -- ItemPrototype
+    stack_size = 1,
+    color_hint = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
+    icon = "__core__/graphics/empty.png"
+  },
+  {
+    type = "container",
+    name = "ftrainworks-coupler-target-container",
+    hidden = true,
+
+    -- EntityPrototype
+    allow_copy_paste = false,
+    collision_box = {{0.0, 0.0}, {0.0, 0.0}},
+    flags = {
+      "not-rotatable",
+      "placeable-off-grid",
+      "not-repairable",
+      "not-on-map",
+      "not-deconstructable",
+      "not-blueprintable",
+      "hide-alt-info",
+      "not-flammable",
+      "no-copy-paste",
+      "not-selectable-in-game",
+      "not-upgradable",
+      "not-in-kill-statistics",
+      "not-in-made-in"
+    },
+    remove_decorations = false,
+    selectable_in_game = false,
+    selection_box = {{0.0, 0.0}, {0.0, 0.0}},
+
+    -- EntityWithHealthPrototype
+    max_health = 2147483648,
+    resistances = {
+      { type = "physical", percent = 100 },
+      { type = "impact", percent = 100 },
+      { type = "fire", percent = 100 },
+      { type = "acid", percent = 100 },
+      { type = "poison", percent = 100 },
+      { type = "explosion", percent = 100 },
+      { type = "laser", percent = 100 },
+      { type = "electric", percent = 100 }
+    },
+
+    -- ContainerPrototype
+    inventory_size = 1,
+  }
+});
