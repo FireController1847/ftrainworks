@@ -60,6 +60,7 @@ data:extend({
     circuit_wire_max_distance = inserter_circuit_wire_max_distance,
     energy_per_movement = "5kJ",
     energy_per_rotation = "5kJ",
+    filter_count = 2,
     hand_base_picture = {
         filename = "__ftrainworks__/graphics/entity/coupler-inserter/coupler-inserter-hand-base.png",
         priority = "extra-high",
@@ -141,7 +142,25 @@ data:extend({
   },
   {
     type = "item",
-    name = "ftrainworks-coupler-target",
+    name = "ftrainworks-coupler-priority-couple",
+
+    -- ItemPrototype
+    stack_size = 1,
+    color_hint = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
+    icon = "__core__/graphics/empty.png"
+  },
+  {
+    type = "item",
+    name = "ftrainworks-coupler-priority-uncouple",
+
+    -- ItemPrototype
+    stack_size = 1,
+    color_hint = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
+    icon = "__core__/graphics/empty.png"
+  },
+  {
+    type = "item",
+    name = "ftrainworks-coupler-stack",
 
     -- ItemPrototype
     stack_size = 1,
@@ -150,7 +169,7 @@ data:extend({
   },
   {
     type = "container",
-    name = "ftrainworks-coupler-target-container",
+    name = "ftrainworks-coupler-container",
     hidden = true,
 
     -- EntityPrototype

@@ -1,3 +1,3 @@
-require("script.registry")
 require("script.coupling")
+require("script.inserters")
 require("script.gui")

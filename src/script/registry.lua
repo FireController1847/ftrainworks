@@ -1,87 +1,45 @@
-local event_registry = {}
-
---[[
-    Event registry for managing mod lifecycle events.
---]]
-
--- Fired once when the mod is initialized for the first time
-event_registry.on_init = {}
-
--- Fired once when the mod configuration is changed (e.g., mod added/removed/updated)
-event_registry.on_configuration_changed = {}
-
--- Fired once on the first tick after initialization
-event_registry.on_first_tick = {}
-
--- Fired on every game tick
-event_registry.on_tick = {}
-
--- Fired when storage needs to be refreshed
-event_registry.on_refresh_storage = {}
-
-
---[[
-    Registration functions for event handlers.
---]]
-
+local registry = {}
+local handlers = {}
 local first_tick = true
 
-function event_registry.register_init(handler)
-    table.insert(event_registry.on_init, handler)
-end
-
-function event_registry.register_configuration_changed(handler)
-    table.insert(event_registry.on_configuration_changed, handler)
-end
-
-function event_registry.register_first_tick(handler)
-    table.insert(event_registry.on_first_tick, handler)
-end
-
-function event_registry.register_tick(handler)
-    table.insert(event_registry.on_tick, handler)
-end
-
-function event_registry.register_refresh_storage(handler)
-    table.insert(event_registry.on_refresh_storage, handler)
-end
-
-
---[[
-    Game event hooks to dispatch registered handlers.
---]]
-
-script.on_init(function()
-    for _, handler in pairs(event_registry.on_refresh_storage) do
-        handler()
+function registry.register(event_names, handler)
+    if type(event_names) ~= "table" then event_names = { event_names } end
+    for _, event_name in ipairs(event_names) do
+        if not handlers[event_name] then
+            handlers[event_name] = {}
+        end
+        table.insert(handlers[event_name], handler)
     end
-    for _, handler in pairs(event_registry.on_init) do
-        handler()
-    end
-end)
+end
 
-script.on_configuration_changed(function(data)
-    for _, handler in pairs(event_registry.on_refresh_storage) do
-        handler()
+function registry.unregister(event_names, handler)
+    if type(event_names) ~= "table" then event_names = { event_names } end
+    for _, event_name in ipairs(event_names) do
+        if handlers[event_name] then
+            for i, registered_handler in ipairs(handlers[event_name]) do
+                if registered_handler == handler then
+                    table.remove(handlers[event_name], i)
+                    break
+                end
+            end
+        end
     end
-    for _, handler in pairs(event_registry.on_configuration_changed) do
-        handler(data)
-    end
-end)
+end
 
 script.on_event(defines.events.on_tick, function(event)
     if first_tick then
         first_tick = false
-        for _, handler in pairs(event_registry.on_refresh_storage) do
-            handler()
+        script.on_event(defines.events.on_tick, nil)
+
+        -- Loop through all registered handlers and assign them to their respective events
+        for event_name, event_handlers in pairs(handlers) do
+            script.on_event(event_name, function(event_data)
+                for _, handler in ipairs(event_handlers) do
+                    handler(event_data)
+                end
+            end)
         end
-        for _, handler in pairs(event_registry.on_first_tick) do
-            handler(event)
-        end
-    end
-    for _, handler in pairs(event_registry.on_tick) do
-        handler(event)
     end
 end)
 
-return event_registry
+return registry

@@ -1,30 +1,113 @@
-local event_registry = require("script.registry")
+local registry = require("script.registry")
+local inserters = require("script.inserters")
 
 --[[
-    GUI creation for the FTrainworks Coupler Inserter.
+    GUI management for the coupler inserter.
 --]]
-local function create_coupler_gui(player, entity)
-    -- Close default gui and destroy existing gui if present
-    player.opened = nil
+local function close_coupler_gui(player)
     local screen = player.gui.screen
-    if screen["ftrainworks-coupler-inserter-gui"] then
-        screen["ftrainworks-coupler-inserter-gui"].destroy()
+    local gui = screen["ftrainworks-coupler-inserter-gui-window"]
+    if gui then gui.destroy() end
+end
+
+local function update_coupler_gui(player, entity)
+    if not (player and player.valid) then return end
+    if not (entity and entity.valid) then return end
+
+    -- Fetch UI components
+    -- TODO: The amount of string comparisons here makes me want to cry
+    local screen = player.gui.screen
+    local ui_window_frame = screen["ftrainworks-coupler-inserter-gui-window"]
+    if not ui_window_frame then return end
+    local ui_frame = ui_window_frame["ftrainworks-coupler-inserter-gui"]
+    local ui_content_frame = ui_frame["ftrainworks-coupler-inserter-gui-content-frame"]
+    local ui_content_flow = ui_content_frame["ftrainworks-coupler-inserter-gui-content-flow"]
+    local ui_controls_flow = ui_content_flow["ftrainworks-coupler-inserter-gui-controls-flow"]
+    local ui_status_flow = ui_content_flow["ftrainworks-coupler-inserter-gui-status-flow"]
+    local ui_status_image = ui_status_flow["ftrainworks-coupler-inserter-gui-status-image"]
+    local ui_status_label = ui_status_flow["ftrainworks-coupler-inserter-gui-status-label"]
+    local ui_controls_radio_flow = ui_controls_flow["ftrainworks-coupler-inserter-gui-controls-radio-flow"]
+    local ui_config_prioritize_coupling = ui_controls_radio_flow["ftrainworks-coupler-inserter-gui-controls-radio-prioritize-coupling"]
+    local ui_config_prioritize_uncoupling = ui_controls_radio_flow["ftrainworks-coupler-inserter-gui-controls-radio-prioritize-uncoupling"]
+
+    local filter_count = entity.filter_slot_count
+    if filter_count < 2 then return end
+    local filter_slot_1 = entity.get_filter(1)
+    --local filter_slot_2 = entity.get_filter(2) -- TODO: Can be used for more complex logic later
+
+    -- Update status
+    local is_connected = false
+    local connectors = entity.get_wire_connectors(false)
+    for _, connector in ipairs(connectors) do
+        if connector.real_connection_count > 0 then
+            is_connected = true
+            break
+        end
+    end
+    if is_connected then
+        -- TODO: Check for train :>
+        ui_status_image.sprite = "utility/status_yellow"
+        ui_status_label.caption = {"other.ftrainworks-coupler-inserter-waiting"}
+    else
+        ui_status_image.sprite = "utility/status_not_working"
+        ui_status_label.caption = {"other.ftrainworks-coupler-inserter-not-working"}
     end
 
+    -- Determine constant couple/decouple state
+    if is_connected then
+        ui_config_prioritize_coupling.enabled = true
+        ui_config_prioritize_uncoupling.enabled = true
+        local couple_state
+        if filter_slot_1 and filter_slot_1.name == "ftrainworks-coupler-priority-couple" then
+            couple_state = "couple"
+        else
+            couple_state = "decouple"
+        end
+        if couple_state == "couple" then
+            ui_config_prioritize_coupling.state = true
+            ui_config_prioritize_uncoupling.state = false
+        else
+            ui_config_prioritize_coupling.state = false
+            ui_config_prioritize_uncoupling.state = true
+        end
+    else
+        ui_config_prioritize_coupling.enabled = false
+        ui_config_prioritize_uncoupling.enabled = false
+    end
+
+    -- Perform movement check
+    inserters.coupler_inserter_check_perform_action(entity)
+end
+
+local function open_coupler_gui(player, entity)
+    -- Close the default gui, destroy existing gui if present
+    player.opened = nil
+    close_coupler_gui(player)
+
+    -- Create the window frame
+    local screen = player.gui.screen
+    local ui_window_frame = screen.add{
+        type = "frame",
+        name = "ftrainworks-coupler-inserter-gui-window",
+        direction = "horizontal",
+        style = "invisible_frame"
+    }
+    ui_window_frame.auto_center = true
+    player.opened = ui_window_frame -- Set currently opened GUI to our frame
+
     -- Create the frame
-    local ui_frame = screen.add{
+    local ui_frame = ui_window_frame.add{
         type = "frame",
         name = "ftrainworks-coupler-inserter-gui",
         direction = "vertical",
         style = "inset_frame_container_frame"
     }
     ui_frame.style.minimal_width = 300
-    ui_frame.auto_center = true
-    player.opened = ui_frame
 
     -- Create the title bar
     local ui_titlebar = ui_frame.add{
         type = "flow",
+        name = "ftrainworks-coupler-inserter-gui-titlebar",
         direction = "horizontal",
         style = "frame_header_flow"
     }
@@ -32,6 +115,7 @@ local function create_coupler_gui(player, entity)
     ui_titlebar.style.bottom_margin = -12
     local ui_titlebar_label = ui_titlebar.add{
         type = "label",
+        name = "ftrainworks-coupler-inserter-gui-titlebar-label",
         caption = entity.localised_name,
         style = "frame_title"
     }
@@ -41,6 +125,7 @@ local function create_coupler_gui(player, entity)
     ui_titlebar_label.style.top_margin = -2.5
     local ui_titlebar_drag = ui_titlebar.add{
         type = "empty-widget",
+        name = "ftrainworks-coupler-inserter-gui-titlebar-drag",
         style = "draggable_space_header"
     }
     ui_titlebar_drag.style.height = 24
@@ -48,22 +133,7 @@ local function create_coupler_gui(player, entity)
     ui_titlebar_drag.style.horizontally_stretchable = true
     ui_titlebar_drag.style.vertically_stretchable = true
     ui_titlebar_drag.style.right_margin = 4
-    ui_titlebar_drag.drag_target = ui_frame
-    local ui_titlebar_circuit = ui_titlebar.add{
-        type = "sprite-button",
-        sprite = "utility/circuit_network_panel",
-        style = "frame_action_button"
-    }
-    local connectors = entity.get_wire_connectors(false)
-    local total_connections = 0
-    for _, connector in pairs(connectors) do
-        total_connections = total_connections + connector.connection_count
-    end
-    if total_connections > 0 then
-        ui_titlebar_circuit.enabled = true
-    else
-        ui_titlebar_circuit.enabled = false
-    end
+    ui_titlebar_drag.drag_target = ui_window_frame
     local ui_titlebar_close = ui_titlebar.add{
         type = "sprite-button",
         name = "ftrainworks-coupler-inserter-gui-close-button",
@@ -76,11 +146,13 @@ local function create_coupler_gui(player, entity)
     -- Create the content flow
     local ui_content_frame = ui_frame.add{
         type = "frame",
+        name = "ftrainworks-coupler-inserter-gui-content-frame",
         style = "inside_shallow_frame_with_padding"
     }
     ui_content_frame.style.top_padding = 8
     local ui_content_flow = ui_content_frame.add{
         type = "flow",
+        name = "ftrainworks-coupler-inserter-gui-content-flow",
         direction = "vertical"
     }
     ui_content_flow.style.vertical_spacing = 8
@@ -88,11 +160,13 @@ local function create_coupler_gui(player, entity)
     -- Create the status widget
     local ui_status_flow = ui_content_flow.add{
         type = "flow",
+        name = "ftrainworks-coupler-inserter-gui-status-flow",
         direction = "horizontal"
     }
     ui_status_flow.style.vertical_align = "center"
     local ui_status_image = ui_status_flow.add{
         type = "sprite",
+        name = "ftrainworks-coupler-inserter-gui-status-image",
         sprite = "utility/status_not_working",
         resize_to_sprite = false
     }
@@ -102,16 +176,19 @@ local function create_coupler_gui(player, entity)
     ui_status_image.style.natural_height = 16
     local ui_status_label = ui_status_flow.add{
         type = "label",
+        name = "ftrainworks-coupler-inserter-gui-status-label",
         caption = {"other.ftrainworks-coupler-inserter-not-working"}
     }
 
     -- Create the entity preview
     local ui_preview_frame = ui_content_flow.add{
         type = "frame",
+        name = "ftrainworks-coupler-inserter-gui-preview-frame",
         style = "deep_frame_in_shallow_frame"
     }
     local ui_preview = ui_preview_frame.add{
         type = "entity-preview",
+        name = "ftrainworks-coupler-inserter-gui-preview",
         style = "wide_entity_button"
     }
     ui_preview.entity = entity
@@ -119,6 +196,7 @@ local function create_coupler_gui(player, entity)
     -- Line separator
     local ui_content_line = ui_content_flow.add{
         type = "line",
+        name = "ftrainworks-coupler-inserter-gui-content-line",
         direction = "horizontal"
     }
     ui_content_line.style.top_margin = 6
@@ -127,105 +205,105 @@ local function create_coupler_gui(player, entity)
     -- Create controls flow
     local ui_controls_flow = ui_content_flow.add{
         type = "flow",
-        direction = "horizontal"
-    }
-    ui_controls_flow.style.horizontal_spacing = 8
-
-    -- Create enabled switch
-    local ui_controls_enabled_flow = ui_controls_flow.add{
-        type = "flow",
+        name = "ftrainworks-coupler-inserter-gui-controls-flow",
         direction = "vertical"
     }
-    ui_controls_enabled_flow.style.vertical_spacing = 8
-    local ui_enabled_label = ui_controls_enabled_flow.add{
-        type = "label",
-        caption = {"gui.ftrainworks-automatic-coupling"},
-        style = "semibold_label"
-    }
-    local ui_enabled_switch = ui_controls_enabled_flow.add{
-        type = "switch",
-        name = "coupler_enabled_switch",
-        left_label_caption = {"gui.off"},
-        right_label_caption = {"gui.on"},
-        switch_state = "right"
-    }
-
-    -- Line separator
-    local ui_controls_line = ui_controls_flow.add{
-        type = "line",
-        direction = "vertical"
-    }
+    ui_controls_flow.style.vertical_spacing = 2
 
     -- Create configuration radio buttons
     local ui_controls_radio_flow = ui_controls_flow.add{
         type = "flow",
+        name = "ftrainworks-coupler-inserter-gui-controls-radio-flow",
         direction = "vertical"
     }
     ui_controls_radio_flow.style.vertical_spacing = 2
     local ui_config_label = ui_controls_radio_flow.add{
         type = "label",
-        caption = {"gui.set-constant"},
+        name = "ftrainworks-coupler-inserter-gui-controls-radio-label",
+        caption = {"gui.ftrainworks-automatic-coupling"},
         style = "semibold_label"
     }
     ui_config_label.style.top_margin = 1
     ui_config_label.style.bottom_margin = 4
-    local ui_config_always_couple = ui_controls_radio_flow.add{
+    local ui_config_prioritize_coupling = ui_controls_radio_flow.add{
         type = "radiobutton",
-        caption = {"other.ftrainworks-coupler-inserter-always-couple"},
+        name = "ftrainworks-coupler-inserter-gui-controls-radio-prioritize-coupling",
+        caption = {"other.ftrainworks-coupler-inserter-prioritize-coupling"},
         state = true
     }
-    local ui_config_always_decouple = ui_controls_radio_flow.add{
+    local ui_config_prioritize_uncoupling = ui_controls_radio_flow.add{
         type = "radiobutton",
-        caption = {"other.ftrainworks-coupler-inserter-always-decouple"},
+        name = "ftrainworks-coupler-inserter-gui-controls-radio-prioritize-uncoupling",
+        caption = {"other.ftrainworks-coupler-inserter-prioritize-uncoupling"},
         state = false
     }
+
+    -- Initial GUI update
+    update_coupler_gui(player, entity)
 end
-
-local function close_coupler_gui(player)
-    local screen = player.gui.screen
-    if screen["ftrainworks-coupler-inserter-gui"] then
-        screen["ftrainworks-coupler-inserter-gui"].destroy()
-    end
-end
-
-
 
 --[[
     GUI event hooks.
 --]]
-script.on_event(defines.events.on_gui_opened, function(event)
+registry.register(defines.events.on_gui_opened, function(event)
     if event.gui_type == defines.gui_type.entity then
         local entity = event.entity
-        if entity and entity.valid and entity.name == "ftrainworks-coupler-inserter" then
-            local player = game.get_player(event.player_index)
-            if not (player and player.valid) then return end
-            create_coupler_gui(player, entity)
+        if not (entity and entity.valid) then return end
+        local player = game.get_player(event.player_index)
+        if not (player and player.valid) then return end
+        if (entity.name == "ftrainworks-coupler-inserter") then
+            open_coupler_gui(player, entity)
         end
     end
 end)
 
-script.on_event(defines.events.on_gui_click, function(event)
+registry.register(defines.events.on_gui_click, function(event)
     local element = event.element
     if not (element and element.valid) then return end
+    local player = game.get_player(event.player_index)
+    if not (player and player.valid) then return end
+
     if element.name == "ftrainworks-coupler-inserter-gui-close-button" then
-        local player = game.get_player(event.player_index)
-        if not (player and player.valid) then return end
         close_coupler_gui(player)
     end
 end)
 
-script.on_event(defines.events.on_gui_closed, function(event)
+registry.register(defines.events.on_gui_checked_state_changed, function(event)
+    local element = event.element
+    if not (element and element.valid) then return end
+    local player = game.get_player(event.player_index)
+    if not (player and player.valid) then return end
+
+    if element.name == "ftrainworks-coupler-inserter-gui-controls-radio-prioritize-coupling" or
+       element.name == "ftrainworks-coupler-inserter-gui-controls-radio-prioritize-uncoupling" then
+        -- Get the preview to fetch the entity
+        local screen = player.gui.screen
+        local ui_window_frame = screen["ftrainworks-coupler-inserter-gui-window"]
+        if not ui_window_frame then return end
+        local ui_frame = ui_window_frame["ftrainworks-coupler-inserter-gui"]
+        local ui_content_frame = ui_frame["ftrainworks-coupler-inserter-gui-content-frame"]
+        local ui_content_flow = ui_content_frame["ftrainworks-coupler-inserter-gui-content-flow"]
+        local ui_preview_frame = ui_content_flow["ftrainworks-coupler-inserter-gui-preview-frame"]
+        local ui_preview = ui_preview_frame["ftrainworks-coupler-inserter-gui-preview"]
+        local entity = ui_preview.entity
+        if not (entity and entity.valid) then return end
+
+        -- Update the filter for slot 1
+        if element.name == "ftrainworks-coupler-inserter-gui-controls-radio-prioritize-coupling" then
+            entity.set_filter(1, {name = "ftrainworks-coupler-priority-couple"})
+        elseif element.name == "ftrainworks-coupler-inserter-gui-controls-radio-prioritize-uncoupling" then
+            entity.set_filter(1, {name = "ftrainworks-coupler-priority-uncouple"})
+        end
+
+        -- Update the gui
+        update_coupler_gui(player, entity)
+    end
+end)
+
+registry.register(defines.events.on_gui_closed, function(event)
     if event.gui_type == defines.gui_type.custom then
         local player = game.get_player(event.player_index)
         if not (player and player.valid) then return end
         close_coupler_gui(player)
     end
-end)
-
-
---[[
-    Registry hooks.
---]]
-event_registry.register_refresh_storage(function()
-    storage.players = storage.players or {}
 end)
