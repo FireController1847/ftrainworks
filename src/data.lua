@@ -1,5 +1,6 @@
 require("prototypes.item")
 require("prototypes.sound")
 require("prototypes.couplers")
+require("prototypes.sensors")
 require("prototypes.input")
 require("prototypes.signals")

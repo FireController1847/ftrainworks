@@ -143,6 +143,7 @@ data:extend({
   {
     type = "item",
     name = "ftrainworks-coupler-priority-couple",
+    hidden = true,
 
     -- ItemPrototype
     stack_size = 1,
@@ -152,6 +153,7 @@ data:extend({
   {
     type = "item",
     name = "ftrainworks-coupler-priority-uncouple",
+    hidden = true,
 
     -- ItemPrototype
     stack_size = 1,
@@ -161,6 +163,7 @@ data:extend({
   {
     type = "item",
     name = "ftrainworks-coupler-stack",
+    hidden = true,
 
     -- ItemPrototype
     stack_size = 1,
