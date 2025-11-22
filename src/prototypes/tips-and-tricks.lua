@@ -1,0 +1,26 @@
+-- local simulations = require("__ftrainworks__/prototypes/tips-and-tricks-simulations")
+
+-- data:extend({
+--     {
+--         -- PrototypeBase
+--         name = "ftrainworks-coupler-inserter-tip",
+--         type = "tips-and-tricks-item",
+--         order = "d",
+
+--         -- TipsAndTricksItemPrototype
+--         category = "inserters",
+--         icon = "__ftrainworks__/graphics/icons/coupler-inserter.png",
+--         indent = 1,
+--         tag = "[entity=ftrainworks-coupler-inserter]",
+--         trigger = {
+--             type = "research",
+--             technology = "automated-rail-transportation"
+--         },
+--         skip_trigger = {
+--             type = "build-entity",
+--             entity = "ftrainworks-coupler-inserter",
+--             count = 15
+--         },
+--         dependencies = {"inserters"}
+--     }
+-- })

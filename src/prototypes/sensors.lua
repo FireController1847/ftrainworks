@@ -1,57 +1,57 @@
-local hit_effects = require("__base__.prototypes.entity.hit-effects")
-local sounds = require("__base__.prototypes.entity.sounds")
+-- local hit_effects = require("__base__.prototypes.entity.hit-effects")
+-- local sounds = require("__base__.prototypes.entity.sounds")
 
-data:extend({
-    {
-        type = "constant-combinator",
-        name = "ftrainworks-sensor",
+-- data:extend({
+--     {
+--         type = "constant-combinator",
+--         name = "ftrainworks-sensor",
 
-        -- EntityPrototype
-        close_sound = sounds.combinator_close,
-        collision_box = {{-0.35, -0.35}, {0.35, 0.35}},
-        -- TODO: Emissions per second? :)
-        flags = {
-            "placeable-neutral",
-            "player-creation"
-        },
-        -- TODO: update
-        icon = "__ftrainworks__/graphics/icons/coupler-inserter.png",
-        icon_draw_specification = {
-            scale = 0.7
-        },
-        minable = {
-            mining_time = 0.1,
-            result = "ftrainworks-sensor"
-        },
-        open_sound = sounds.combinator_open,
-        selection_box = {{-0.5, -0.5}, {0.5, 0.5}},
-        -- TODO: working sound?
+--         -- EntityPrototype
+--         close_sound = sounds.combinator_close,
+--         collision_box = {{-0.35, -0.35}, {0.35, 0.35}},
+--         -- TODO: Emissions per second? :)
+--         flags = {
+--             "placeable-neutral",
+--             "player-creation"
+--         },
+--         -- TODO: update
+--         icon = "__ftrainworks__/graphics/icons/coupler-inserter.png",
+--         icon_draw_specification = {
+--             scale = 0.7
+--         },
+--         minable = {
+--             mining_time = 0.1,
+--             result = "ftrainworks-sensor"
+--         },
+--         open_sound = sounds.combinator_open,
+--         selection_box = {{-0.5, -0.5}, {0.5, 0.5}},
+--         -- TODO: working sound?
 
-        -- EntityWithHealthPrototype
-        -- TODO: corpse
-        dying_explosion = "constant-combinator-explosion",
-        damaged_trigger_effect = hit_effects.entity(),
-        max_health = 120,
+--         -- EntityWithHealthPrototype
+--         -- TODO: corpse
+--         dying_explosion = "constant-combinator-explosion",
+--         damaged_trigger_effect = hit_effects.entity(),
+--         max_health = 120,
 
-        -- ConstantCombinatorPrototype
-        activity_led_light_offsets = {
-            {0.296875, -0.40625},
-            {0.25, -0.03125},
-            {-0.296875, -0.078125},
-            {-0.21875, -0.46875}
-        },
-        -- TODO: on model match inserter positions
-        circuit_wire_connection_points = {
-            circuit_connector_definitions["inserter"][1].points,
-            circuit_connector_definitions["inserter"][2].points,
-            circuit_connector_definitions["inserter"][3].points,
-            circuit_connector_definitions["inserter"][4].points,
-        }, -- TODO: update
-        activity_led_light = {
-            intensity = 0,
-            size = 1,
-            color = {r = 1.0, g = 1.0, b = 1.0}
-        },
-        circuit_wire_max_distance = combinator_circuit_wire_max_distance
-    }
-})
+--         -- ConstantCombinatorPrototype
+--         activity_led_light_offsets = {
+--             {0.296875, -0.40625},
+--             {0.25, -0.03125},
+--             {-0.296875, -0.078125},
+--             {-0.21875, -0.46875}
+--         },
+--         -- TODO: on model match inserter positions
+--         circuit_wire_connection_points = {
+--             circuit_connector_definitions["inserter"][1].points,
+--             circuit_connector_definitions["inserter"][2].points,
+--             circuit_connector_definitions["inserter"][3].points,
+--             circuit_connector_definitions["inserter"][4].points,
+--         }, -- TODO: update
+--         activity_led_light = {
+--             intensity = 0,
+--             size = 1,
+--             color = {r = 1.0, g = 1.0, b = 1.0}
+--         },
+--         circuit_wire_max_distance = combinator_circuit_wire_max_distance
+--     }
+-- })

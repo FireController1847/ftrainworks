@@ -290,6 +290,13 @@ end
 --[[
     Initialization and configuration events.
 --]]
+local function validate_storage()
+    storage.train_state = storage.train_state or {}
+    storage.couplers = storage.couplers or {}
+    storage.coupler_inserter_moving = storage.coupler_inserter_moving or {}
+    storage.perform_train_cleanup = storage.perform_train_cleanup or false
+end
+
 local function reconcile_trains()
     for _, train in pairs(game.train_manager.get_trains({})) do
         if train and train.valid then
@@ -309,10 +316,7 @@ registry.register(defines.events.on_init, function(event)
 end)
 
 registry.register(defines.events.on_configuration_changed, function(event)
-    storage.train_state = storage.train_state or {}
-    storage.couplers = storage.couplers or {}
-    storage.coupler_inserter_moving = storage.coupler_inserter_moving or {}
-    storage.perform_train_cleanup = storage.perform_train_cleanup or false
+    validate_storage()
     reconcile_trains()
 end)
 
@@ -335,6 +339,7 @@ end)
 registry.register(defines.events.on_train_changed_state, function(event)
     local train = event.train
     if not (train and train.valid) then return end
+    validate_storage()
     update_train_state(train)
 end)
 
@@ -360,6 +365,12 @@ end)
 --]]
 local first_tick = true
 registry.register(defines.events.on_tick, function(event)
+    if first_tick then
+        first_tick = false
+        validate_storage()
+        reconcile_trains()
+    end
+
     if storage.perform_train_cleanup then
         storage.perform_train_cleanup = false
         for id,_ in pairs(storage.train_state) do
@@ -368,15 +379,6 @@ registry.register(defines.events.on_tick, function(event)
                 remove_train(id)
             end
         end
-    end
-
-    if first_tick then
-        first_tick = false
-        storage.train_state = storage.train_state or {}
-        storage.couplers = storage.couplers or {}
-        storage.coupler_inserter_moving = storage.coupler_inserter_moving or {}
-        storage.perform_train_cleanup = storage.perform_train_cleanup or false
-        reconcile_trains()
     end
 
     -- Perform animations for moving coupler inserters

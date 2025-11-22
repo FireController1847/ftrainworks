@@ -15,22 +15,22 @@ data:extend({
         place_result = "ftrainworks-coupler-inserter",
 
         -- PrototypeBase
-        order = "b[inserter]-c[fast-inserter]",
+        order = "c[fast-inserter]-d[long-handed-inserter]",
         subgroup = "inserter",
     },
-    {
-        type = "item",
-        name = "ftrainworks-sensor",
-        -- TODO: update
-        icon = "__ftrainworks__/graphics/icons/coupler-inserter.png",
-        subgroup = "circuit-network",
-        place_result = "ftrainworks-sensor",
-        order = "c[combinators]-e[ftrainworks-sensor]",
-        -- TODO: custom sounds?
-        inventory_move_sound = item_sounds.combinator_inventory_move,
-        pick_sound = item_sounds.combinator_inventory_pickup,
-        drop_sound = item_sounds.combinator_inventory_move,
-        stack_size = 50,
-        weight = 20 * kg
-    }
+    -- {
+    --     type = "item",
+    --     name = "ftrainworks-sensor",
+    --     -- TODO: update
+    --     icon = "__ftrainworks__/graphics/icons/coupler-inserter.png",
+    --     subgroup = "circuit-network",
+    --     place_result = "ftrainworks-sensor",
+    --     order = "c[combinators]-e[ftrainworks-sensor]",
+    --     -- TODO: custom sounds?
+    --     inventory_move_sound = item_sounds.combinator_inventory_move,
+    --     pick_sound = item_sounds.combinator_inventory_pickup,
+    --     drop_sound = item_sounds.combinator_inventory_move,
+    --     stack_size = 50,
+    --     weight = 20 * kg
+    -- }
 });

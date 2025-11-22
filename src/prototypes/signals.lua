@@ -8,14 +8,14 @@ data:extend({
     {
         type = "virtual-signal",
         name = "ftrainworks-signal-couple",
-        icon = "__base__/graphics/icons/battery.png",
+        icon = "__ftrainworks__/graphics/icons/signal/signal-couple.png",
         subgroup = "ftrainworks",
         order = "a[couple]"
     },
     {
         type = "virtual-signal",
         name = "ftrainworks-signal-uncouple",
-        icon = "__base__/graphics/icons/battery.png",
+        icon = "__ftrainworks__/graphics/icons/signal/signal-uncouple.png",
         subgroup = "ftrainworks",
         order = "b[uncouple]"
     }
