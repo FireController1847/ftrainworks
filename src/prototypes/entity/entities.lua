@@ -1,6 +1,65 @@
 local hit_effects = require("__base__.prototypes.entity.hit-effects")
 local sounds = require("__base__.prototypes.entity.sounds")
 
+local sensor = generate_constant_combinator({
+  type = "constant-combinator",
+  name = "ftrainworks-sensor",
+
+  -- EntityPrototype
+  close_sound = sounds.combinator_close,
+  collision_box = {{-0.35, -0.35}, {0.35, 0.35}},
+  -- TODO: Emissions per second? :)
+  flags = {
+      "placeable-neutral",
+      "player-creation"
+  },
+  icon = "__ftrainworks__/graphics/icons/sensor.png",
+  icon_draw_specification = {
+      scale = 0.7
+  },
+  minable = {
+      mining_time = 0.1,
+      result = "ftrainworks-sensor"
+  },
+  open_sound = sounds.combinator_open,
+  selection_box = {{-0.5, -0.5}, {0.5, 0.5}},
+  -- TODO: working sound?
+
+  -- EntityWithHealthPrototype
+  -- TODO: corpse
+  dying_explosion = "constant-combinator-explosion",
+  damaged_trigger_effect = hit_effects.entity(),
+  max_health = 120,
+
+  -- ConstantCombinatorPrototype
+  activity_led_light_offsets = {
+      {0.296875, -0.40625},
+      {0.25, -0.03125},
+      {-0.296875, -0.078125},
+      {-0.21875, -0.46875}
+  },
+  circuit_wire_max_distance = combinator_circuit_wire_max_distance,
+})
+sensor.sprites = make_4way_animation_from_spritesheet({
+  layers = {
+    {
+      scale = 0.5,
+      filename = "__ftrainworks__/graphics/entity/sensor/sensor.png",
+      width = 114,
+      height = 102,
+      shift = util.by_pixel(0, 5)
+    },
+    {
+      scale = 0.5,
+      filename = "__ftrainworks__/graphics/entity/sensor/sensor-shadow.png",
+      width = 98,
+      height = 66,
+      shift = util.by_pixel(8.5, 5.5),
+      draw_as_shadow = true
+    }
+  }
+})
+
 data:extend({
   {
     type = "simple-entity-with-owner",
@@ -187,44 +246,5 @@ data:extend({
     -- ContainerPrototype
     inventory_size = 1,
   },
-  generate_constant_combinator({
-    type = "constant-combinator",
-    name = "ftrainworks-sensor",
-
-    -- EntityPrototype
-    close_sound = sounds.combinator_close,
-    collision_box = {{-0.35, -0.35}, {0.35, 0.35}},
-    -- TODO: Emissions per second? :)
-    flags = {
-        "placeable-neutral",
-        "player-creation"
-    },
-    -- TODO: update
-    icon = "__base__/graphics/icons/constant-combinator.png",
-    icon_draw_specification = {
-        scale = 0.7
-    },
-    minable = {
-        mining_time = 0.1,
-        result = "ftrainworks-sensor"
-    },
-    open_sound = sounds.combinator_open,
-    selection_box = {{-0.5, -0.5}, {0.5, 0.5}},
-    -- TODO: working sound?
-
-    -- EntityWithHealthPrototype
-    -- TODO: corpse
-    dying_explosion = "constant-combinator-explosion",
-    damaged_trigger_effect = hit_effects.entity(),
-    max_health = 120,
-
-    -- ConstantCombinatorPrototype
-    activity_led_light_offsets = {
-        {0.296875, -0.40625},
-        {0.25, -0.03125},
-        {-0.296875, -0.078125},
-        {-0.21875, -0.46875}
-    },
-    circuit_wire_max_distance = combinator_circuit_wire_max_distance,
-  })
+  sensor
 });

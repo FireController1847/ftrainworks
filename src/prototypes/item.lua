@@ -51,8 +51,7 @@ data:extend({
     {
         type = "item",
         name = "ftrainworks-sensor",
-        -- TODO: update
-        icon = "__base__/graphics/icons/constant-combinator.png",
+        icon = "__ftrainworks__/graphics/icons/sensor.png",
         subgroup = "circuit-network",
         place_result = "ftrainworks-sensor",
         order = "c[combinators]-e[ftrainworks-sensor]",

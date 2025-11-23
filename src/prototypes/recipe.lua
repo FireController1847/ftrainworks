@@ -37,5 +37,39 @@ data:extend({
                 amount = 1
             }
         }
+    },
+    {
+        -- Prototype
+        type = "recipe",
+        name = "ftrainworks-sensor",
+
+        -- RecipePrototype
+        allow_quality = false,
+        enabled = false,
+        energy_required = 0.5,
+        ingredients = {
+            {
+                type = "item",
+                name = "iron-plate",
+                amount = 2
+            },
+            {
+                type = "item",
+                name = "copper-cable",
+                amount = 5
+            },
+            {
+                type = "item",
+                name = "electronic-circuit",
+                amount = 2
+            }
+        },
+        results = {
+            {
+                type = "item",
+                name = "ftrainworks-sensor",
+                amount = 1
+            }
+        }
     }
 })

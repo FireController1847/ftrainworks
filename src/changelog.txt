@@ -2,4 +2,5 @@
 Version: 1.0.0
 Date: September 14th, 2025
   Major Features:
+    - Added train couplers, the train coupler inserter, and the train sensor.
     - Initial release.
