@@ -28,6 +28,9 @@ data:extend({
     -- EntityPrototype
     allow_copy_paste = false,
     collision_box = {{0.0, 0.0}, {0.0, 0.0}},
+    collision_mask = {
+      layers = {}
+    },
     flags = {
         "placeable-off-grid",
         "not-rotatable",
@@ -42,7 +45,8 @@ data:extend({
     },
     minable = {mining_time = math.huge},
     selection_box = {{-0.35, -0.35}, {0.35, 0.35}}
-}, {
+  },
+  {
     type = "inserter",
     name = "ftrainworks-coupler-inserter",
 
@@ -141,36 +145,6 @@ data:extend({
     working_sound = sounds.inserter_basic
   },
   {
-    type = "item",
-    name = "ftrainworks-coupler-priority-couple",
-    hidden = true,
-
-    -- ItemPrototype
-    stack_size = 1,
-    color_hint = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
-    icon = "__core__/graphics/empty.png"
-  },
-  {
-    type = "item",
-    name = "ftrainworks-coupler-priority-uncouple",
-    hidden = true,
-
-    -- ItemPrototype
-    stack_size = 1,
-    color_hint = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
-    icon = "__core__/graphics/empty.png"
-  },
-  {
-    type = "item",
-    name = "ftrainworks-coupler-stack",
-    hidden = true,
-
-    -- ItemPrototype
-    stack_size = 1,
-    color_hint = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
-    icon = "__core__/graphics/empty.png"
-  },
-  {
     type = "container",
     name = "ftrainworks-coupler-container",
     hidden = true,
@@ -212,5 +186,45 @@ data:extend({
 
     -- ContainerPrototype
     inventory_size = 1,
-  }
+  },
+  generate_constant_combinator({
+    type = "constant-combinator",
+    name = "ftrainworks-sensor",
+
+    -- EntityPrototype
+    close_sound = sounds.combinator_close,
+    collision_box = {{-0.35, -0.35}, {0.35, 0.35}},
+    -- TODO: Emissions per second? :)
+    flags = {
+        "placeable-neutral",
+        "player-creation"
+    },
+    -- TODO: update
+    icon = "__base__/graphics/icons/constant-combinator.png",
+    icon_draw_specification = {
+        scale = 0.7
+    },
+    minable = {
+        mining_time = 0.1,
+        result = "ftrainworks-sensor"
+    },
+    open_sound = sounds.combinator_open,
+    selection_box = {{-0.5, -0.5}, {0.5, 0.5}},
+    -- TODO: working sound?
+
+    -- EntityWithHealthPrototype
+    -- TODO: corpse
+    dying_explosion = "constant-combinator-explosion",
+    damaged_trigger_effect = hit_effects.entity(),
+    max_health = 120,
+
+    -- ConstantCombinatorPrototype
+    activity_led_light_offsets = {
+        {0.296875, -0.40625},
+        {0.25, -0.03125},
+        {-0.296875, -0.078125},
+        {-0.21875, -0.46875}
+    },
+    circuit_wire_max_distance = combinator_circuit_wire_max_distance,
+  })
 });

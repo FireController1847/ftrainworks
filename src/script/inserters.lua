@@ -88,7 +88,9 @@ local function coupler_inserter_check_perform_action(entity)
 
     -- END HIGH-PERFORMANT CODE --
 
-    --game.print("Checking coupler inserter at " .. serpent.line(entity.position) .. " with signals: couple=" .. couple_signal .. ", uncouple=" .. uncouple_signal .. " on tick " .. game.tick)
+    -- Validate we actually have a coupler nearby
+    local nearest_coupler = coupling.get_nearest_coupler(entity.surface, entity.drop_position, 1)
+    if not nearest_coupler then return end
 
     -- If no signals, do nothing
     -- If both signals, determine based on set priority
@@ -143,7 +145,7 @@ local function coupler_inserter_check_trains(train)
                     if inserter and inserter.valid then
                         -- Add to active list
                         storage.coupler_inserter_active[inserter] = {
-                            train.id,
+                            train_id = train.id,
                             couple_signal = nil,
                             uncouple_signal = nil
                         }
@@ -203,16 +205,21 @@ end)
     Per-tick event.
 --]]
 local first_tick = true
+local n = 0
 registry.register(defines.events.on_tick, function(event)
     if first_tick then
         first_tick = false
         storage.coupler_inserter_active = storage.coupler_inserter_active or {}
     end
 
-    -- If there are active inserters, process them
-    for inserter, _ in pairs(storage.coupler_inserter_active) do
-        -- I hate to perform this every tick but I don't know how else I'd respond to circuit changes
-        coupler_inserter_check_perform_action(inserter)
+    n = n + 1
+    if n >= 15 then
+        n = 0
+
+        -- If there are active inserters, process them
+        for inserter, _ in pairs(storage.coupler_inserter_active) do
+            coupler_inserter_check_perform_action(inserter)
+        end
     end
 end)
 

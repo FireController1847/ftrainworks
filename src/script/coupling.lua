@@ -15,6 +15,57 @@ local function is_entity_rolling_stock(entity)
     end
 end
 
+-- Finds the nearest rolling stock entity within a radius
+local function get_nearest_rolling_stock(surface, position, radius)
+    local nearby = surface.find_entities_filtered{
+        position = position,
+        radius = radius
+    }
+
+    local nearest = nil
+    local nearest_dist_sq = radius * radius
+
+    for _, entity in pairs(nearby) do
+        if entity and entity.valid and entity.train and is_entity_rolling_stock(entity) then
+            local dx = entity.position.x - position.x
+            local dy = entity.position.y - position.y
+            local dist_sq = dx * dx + dy * dy
+            if dist_sq < nearest_dist_sq then
+                nearest = entity
+                nearest_dist_sq = dist_sq
+            end
+        end
+    end
+
+    return nearest
+end
+
+-- Finds the nearest coupler entity within a radius
+local function get_nearest_coupler(surface, position, radius)
+    local nearby = surface.find_entities_filtered{
+        name = "ftrainworks-coupler",
+        position = position,
+        radius = radius
+    }
+
+    local nearest = nil
+    local nearest_dist_sq = radius * radius
+
+    for _, entity in pairs(nearby) do
+        if entity and entity.valid then
+            local dx = entity.position.x - position.x
+            local dy = entity.position.y - position.y
+            local dist_sq = dx * dx + dy * dy
+            if dist_sq < nearest_dist_sq then
+                nearest = entity
+                nearest_dist_sq = dist_sq
+            end
+        end
+    end
+
+    return nearest
+end
+
 -- Calculate the back center position of a carriage given its bounding box, coupler bounding box, and orientation
 local function back_center(carriage_box, coupler_box, orientation)
     -- Calculate centers and sizes
@@ -254,6 +305,59 @@ local function remove_train_all_couplers(train_id)
     end
 end
 
+local function validate_train_coupler(coupler)
+    -- Ensure the coupler is registered in storage
+    local coupler_data = nil
+    for _, entry in ipairs(storage.couplers) do
+        if entry.entity == coupler then
+            coupler_data = entry
+            break
+        end
+    end
+    if coupler_data == nil then
+        -- Not found, destroy the entity
+        if coupler and coupler.valid then
+            coupler.destroy()
+        end
+        return
+    end
+
+    -- If the data exists, validate the coupler is positioned nearby its carriage
+    local train = game.train_manager.get_train_by_id(coupler_data.train_id)
+    if not (train and train.valid) then
+        -- Train no longer valid, destroy coupler
+        if coupler and coupler.valid then
+            coupler.destroy()
+            table.remove(storage.couplers, coupler_data)
+        end
+        return
+    end
+    local carriage = nil
+    for _, c in pairs(train.carriages) do
+        if c.unit_number == coupler_data.carriage_unit_number then
+            carriage = c
+            break
+        end
+    end
+    if not (carriage and carriage.valid) then
+        -- Carriage no longer valid, destroy coupler
+        if coupler and coupler.valid then
+            coupler.destroy()
+            table.remove(storage.couplers, coupler_data)
+        end
+        return
+    end
+    local dist_sq = (coupler.position.x - carriage.position.x)^2 + (coupler.position.y - carriage.position.y)^2
+    if dist_sq > 16 then
+        -- Coupler too far from carriage, destroy coupler
+        if coupler and coupler.valid then
+            coupler.destroy()
+            table.remove(storage.couplers, coupler_data)
+        end
+        return
+    end
+end
+
 --[[
     Train state methods.
 --]]
@@ -329,6 +433,8 @@ registry.register("ftrainworks-left-click", function(event)
     local selected = player.selected
     if not (selected and selected.valid) then return end
     if selected.name == "ftrainworks-coupler" then
+        validate_train_coupler(selected)
+        if not (selected and selected.valid) then return end
         connect_disconnect_rolling_stock(player.surface, selected.position)
     end
 end)
@@ -445,6 +551,8 @@ end)
 -- Export various functions for internal API usage
 return {
     is_entity_rolling_stock = is_entity_rolling_stock,
+    get_nearest_rolling_stock = get_nearest_rolling_stock,
+    get_nearest_coupler = get_nearest_coupler,
     back_center = back_center,
     are_nearest_carriages_connected = are_nearest_carriages_connected,
     connect_disconnect_rolling_stock = connect_disconnect_rolling_stock,

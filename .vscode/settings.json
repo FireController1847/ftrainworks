@@ -10,6 +10,8 @@
         "storage",
         "helpers",
         "make_rotated_animation_variations_from_sheet",
-        "prototypes"
+        "prototypes",
+        "combinator_circuit_wire_max_distance",
+        "circuit_connector_definitions"
     ]
 }

@@ -18,19 +18,49 @@ data:extend({
         order = "c[fast-inserter]-d[long-handed-inserter]",
         subgroup = "inserter",
     },
-    -- {
-    --     type = "item",
-    --     name = "ftrainworks-sensor",
-    --     -- TODO: update
-    --     icon = "__ftrainworks__/graphics/icons/coupler-inserter.png",
-    --     subgroup = "circuit-network",
-    --     place_result = "ftrainworks-sensor",
-    --     order = "c[combinators]-e[ftrainworks-sensor]",
-    --     -- TODO: custom sounds?
-    --     inventory_move_sound = item_sounds.combinator_inventory_move,
-    --     pick_sound = item_sounds.combinator_inventory_pickup,
-    --     drop_sound = item_sounds.combinator_inventory_move,
-    --     stack_size = 50,
-    --     weight = 20 * kg
-    -- }
+    {
+        type = "item",
+        name = "ftrainworks-coupler-priority-couple",
+        hidden = true,
+
+        -- ItemPrototype
+        stack_size = 1,
+        color_hint = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
+        icon = "__core__/graphics/empty.png"
+    },
+    {
+        type = "item",
+        name = "ftrainworks-coupler-priority-uncouple",
+        hidden = true,
+
+        -- ItemPrototype
+        stack_size = 1,
+        color_hint = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
+        icon = "__core__/graphics/empty.png"
+    },
+    {
+        type = "item",
+        name = "ftrainworks-coupler-stack",
+        hidden = true,
+
+        -- ItemPrototype
+        stack_size = 1,
+        color_hint = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
+        icon = "__core__/graphics/empty.png"
+    },
+    {
+        type = "item",
+        name = "ftrainworks-sensor",
+        -- TODO: update
+        icon = "__base__/graphics/icons/constant-combinator.png",
+        subgroup = "circuit-network",
+        place_result = "ftrainworks-sensor",
+        order = "c[combinators]-e[ftrainworks-sensor]",
+        -- TODO: custom sounds?
+        inventory_move_sound = item_sounds.combinator_inventory_move,
+        pick_sound = item_sounds.combinator_inventory_pickup,
+        drop_sound = item_sounds.combinator_inventory_move,
+        stack_size = 50,
+        weight = 20 * kg
+    }
 });
