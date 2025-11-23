@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.2
+Date: November 22nd, 2025
+  Major Features:
+    - Attempt to resolve multiplayer desyncs by ensuring on_init, on_configuration_changed, and on_load events are properly registered and handled.
+
+---------------------------------------------------------------------------------------------------
 Version: 1.0.1
 Date: November 22nd, 2025
   Minor Features:
