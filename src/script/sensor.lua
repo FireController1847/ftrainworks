@@ -4,12 +4,6 @@ local coupling = require("script.coupling")
 --[[
     Sensor event handlers.
 --]]
-local function train_sensor_created(entity)
-    -- Set default params
-    entity.combinator_description = "read-contents"
-end
-
-
 local function train_sensor_check_perform_action(entity)
     -- START HIGH-PERFORMANT CODE --
 
@@ -181,6 +175,33 @@ local function train_sensor_check_trains(train)
                     -- Perform initial check
                     train_sensor_check_perform_action(sensor)
                 end
+            end
+        end
+    end
+end
+
+local function train_sensor_created(entity)
+    -- Set default params
+    entity.combinator_description = "read-contents"
+
+    -- If there is a train in front of us, make sure to add to active sensor list
+    local surface = entity.surface
+    local position = entity.position
+    local nearest_carriage = coupling.get_nearest_rolling_stock(surface, position, 6)
+    if nearest_carriage then
+        local train = nearest_carriage.train
+        if train and train.valid then
+            local train_state = storage.train_state[train.id]
+            if train_state and train_state.stopped then
+                -- Add to active inserter list
+                storage.sensor_active[entity] = {
+                    train_id = train.id,
+                    carriage = nearest_carriage,
+                    filters = {}
+                }
+
+                -- Perform initial check
+                train_sensor_check_perform_action(entity)
             end
         end
     end

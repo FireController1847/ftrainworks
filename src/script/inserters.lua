@@ -12,6 +12,25 @@ local function coupler_inserter_created(entity)
     local filter_slot_2 = entity.get_filter(2)
     if not filter_slot_1 then entity.set_filter(1, "ftrainworks-coupler-priority-couple") end
     if not filter_slot_2 then entity.set_filter(2, "ftrainworks-coupler-priority-uncouple") end
+
+    -- If there is a train in front of us, make sure to add to active inserter list
+    local surface = entity.surface
+    local position = entity.position
+    local nearest_carriage = coupling.get_nearest_rolling_stock(surface, position, 6)
+    if nearest_carriage then
+        local train = nearest_carriage.train
+        if train and train.valid then
+            local train_state = storage.train_state[train.id]
+            if train_state and train_state.stopped then
+                -- Add to active inserter list
+                storage.coupler_inserter_active[entity] = {
+                    train_id = train.id,
+                    couple_signal = nil,
+                    uncouple_signal = nil
+                }
+            end
+        end
+    end
 end
 
 local function coupler_inserter_perform(entity, action)

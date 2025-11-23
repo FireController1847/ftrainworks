@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.3
+Date: November 22nd, 2025
+  Major Features:
+    - Attempt #2 to resolve multiplayer desyncs by ensuring on_init, on_configuration_changed, and on_load events are properly registered and handled.
+    - Resolved issue where newly placed inserters or sensors would not be registered until a train moves and stops again.
+
+---------------------------------------------------------------------------------------------------
 Version: 1.0.2
 Date: November 22nd, 2025
   Major Features:

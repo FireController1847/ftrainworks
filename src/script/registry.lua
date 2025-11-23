@@ -1,6 +1,6 @@
 local registry = {}
-local handlers = {}
-local first_tick = true
+storage.handlers = storage.handlers or {}
+local handlers = storage.handlers
 
 function registry.register(event_names, handler)
     if type(event_names) ~= "table" then event_names = { event_names } end
@@ -27,25 +27,18 @@ function registry.unregister(event_names, handler)
 end
 
 local function register_events()
-    script.on_event(defines.events.on_tick, function(event)
-        if first_tick then
-            first_tick = false
-            script.on_event(defines.events.on_tick, nil)
-
-            -- Loop through all registered handlers and assign them to their respective events
-            for event_name, event_handlers in pairs(handlers) do
-                if event_name == defines.on_init or event_name == defines.on_configuration_changed or event_name == defines.on_load then
-                    -- Skip these events as they are handled separately
-                else
-                    script.on_event(event_name, function(event_data)
-                        for _, handler in ipairs(event_handlers) do
-                            handler(event_data)
-                        end
-                    end)
+    -- Loop through all registered handlers and assign them to their respective events
+    for event_name, event_handlers in pairs(handlers) do
+        if event_name == defines.on_init or event_name == defines.on_configuration_changed or event_name == defines.on_load then
+            -- Skip these events as they are handled separately
+        else
+            script.on_event(event_name, function(event_data)
+                for _, handler in ipairs(event_handlers) do
+                    handler(event_data)
                 end
-            end
+            end)
         end
-    end)
+    end
 end
 
 script.on_init(function()
