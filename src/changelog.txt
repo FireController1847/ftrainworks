@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.2
+Date: November 24th, 2025
+  Minor Features:
+    - Resolved issue where the logic for checking directionality of train cars didn't work for locomotives.
+    - Resolved issue where the coupling/uncoupling logic could choose the wrong direction for certain car arrangements.
+    - Resolved issue where the coupling/uncoupling logic did not correctly handled reversed carriages.
+    - Resolved issue where data could become invalid and it would never attempt to be revalidated.
+
+---------------------------------------------------------------------------------------------------
 Version: 1.1.1
 Date: November 24th, 2025
   Minor Features:

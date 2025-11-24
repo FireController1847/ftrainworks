@@ -22,6 +22,19 @@ local function create_sensor_data(sensor_unit_number)
     table.insert(storage.sensors, sensor_unit_number)
 end
 
+---Validates that the data structure for a sensor exists in storage.
+---If it does not exist, it is created.
+---@param sensor_unit_number uint64 The sensor entity unit number.
+local function validate_sensor_data(sensor_unit_number)
+    storage.sensors = storage.sensors or {}
+    for _, unit_number in ipairs(storage.sensors) do
+        if unit_number == sensor_unit_number then
+            return
+        end
+    end
+    create_sensor_data(sensor_unit_number)
+end
+
 ---Removes the data structure for a sensor from storage.
 ---Does not perform any validation.
 ---@param sensor_unit_number uint64 The sensor entity unit number.
@@ -53,6 +66,7 @@ local function activate_sensors(train)
             name = "ftrainworks-sensor"
         }
         for _, sensor in pairs(nearby_sensors) do
+            validate_sensor_data(sensor.unit_number)
             active_sensors[sensor.unit_number] = {
                 train = train,
                 carriage = carriage,

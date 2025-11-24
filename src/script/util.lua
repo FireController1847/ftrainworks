@@ -10,6 +10,29 @@ local function is_entity_carriage(entity)
     end
 end
 
+local function get_carriage_connected_side(carriage1, carriage2)
+    if not (carriage1 and carriage1.valid) then return nil end
+    if not (carriage2 and carriage2.valid) then return nil end
+    local train1 = carriage1.train
+    local train2 = carriage2.train
+    if not (train1 and train1.valid) then return nil end
+    if not (train2 and train2.valid) then return nil end
+    if train1 ~= train2 then return nil end -- If they're not on the same train, they can't be connected
+    local carriages = train1.carriages
+    for i = 1, #carriages do
+        if carriages[i] == carriage1 then
+            if carriages[i+1] and carriages[i+1].unit_number == carriage2.unit_number then
+                return "front"
+            elseif carriages[i-1] and carriages[i-1].unit_number == carriage2.unit_number then
+                return "back"
+            else
+                return nil
+            end
+        end
+    end
+    return nil
+end
+
 ---Checks if two carriages are connected.
 ---@param carriage1 LuaEntity The first carriage entity.
 ---@param carriage2 LuaEntity The second carriage entity.
@@ -17,14 +40,24 @@ end
 local function are_carriages_connected(carriage1, carriage2)
     if not (carriage1 and carriage1.valid) then return false end
     if not (carriage2 and carriage2.valid) then return false end
-    local front_connected = carriage1.get_connected_rolling_stock(defines.rail_direction.front)
-    if not front_connected then return false end
-    local back_connected  = carriage1.get_connected_rolling_stock(defines.rail_direction.back)
-    if not back_connected then return false end
-    local is_connected =
-        (front_connected and front_connected == carriage2) or
-        (back_connected and back_connected == carriage2)
-    return is_connected
+    local train1 = carriage1.train
+    local train2 = carriage2.train
+    if not (train1 and train1.valid) then return false end
+    if not (train2 and train2.valid) then return false end
+    if train1 ~= train2 then return false end -- If they're not on the same train, they can't be connected
+    local carriages = train1.carriages
+    for i = 1, #carriages do
+        if carriages[i] == carriage1 then
+            if carriages[i+1] and carriages[i+1].unit_number == carriage2.unit_number then
+                return true
+            end
+            if carriages[i-1] and carriages[i-1].unit_number == carriage2.unit_number then
+                return true
+            end
+            return false
+        end
+    end
+    return false
 end
 
 ---Calculates the back center point of box1 relative to box2 based on orientation
@@ -95,6 +128,21 @@ local function find_nearest_couplers(surface, position, radius)
     return couplers
 end
 
+---Finds the nearest inserters around a position on a surface.
+---@param surface LuaSurface The surface to search on.
+---@param position MapPosition The position to search around.
+---@param radius number The search radius.
+---@return LuaEntity[] # An array of found inserter entities.
+local function find_nearest_inserters(surface, position, radius)
+    local inserters = surface.find_entities_filtered{
+        surface = surface,
+        position = position,
+        radius = radius,
+        name = "ftrainworks-coupler-inserter"
+    }
+    return inserters
+end
+
 ---Finds the nearest carriages around a position on a surface.
 ---@param surface LuaSurface The surface to search on.
 ---@param position MapPosition The position to search around.
@@ -120,11 +168,7 @@ local function connect_disconnect_carriages(carriage1, carriage2, surface, posit
     -- Determine relative directions
     if not (carriage1 and carriage1.valid) then return end
     if not (carriage2 and carriage2.valid) then return end
-    local front_connected = carriage1.get_connected_rolling_stock(defines.rail_direction.front)
-    local back_connected  = carriage1.get_connected_rolling_stock(defines.rail_direction.back)
-    local is_connected =
-        (front_connected and front_connected == carriage2) or
-        (back_connected and back_connected == carriage2)
+    local is_connected = are_carriages_connected(carriage1, carriage2)
 
     -- Decide action based on desired state
     local should_disconnect
@@ -136,12 +180,22 @@ local function connect_disconnect_carriages(carriage1, carriage2, surface, posit
     end
     if should_disconnect then
         if not is_connected then return end
-        if front_connected and (front_connected == carriage2) then
-            carriage1.disconnect_rolling_stock(defines.rail_direction.front)
-        elseif back_connected and (back_connected == carriage2) then
-            carriage1.disconnect_rolling_stock(defines.rail_direction.back)
+        -- Check if carriage1's orientation is reversed
+        local reversed = carriage1.orientation > 0.5
+
+        local side = get_carriage_connected_side(carriage1, carriage2)
+        if side == "front" then
+            if reversed then
+                carriage1.disconnect_rolling_stock(defines.rail_direction.back)
+            else
+                carriage1.disconnect_rolling_stock(defines.rail_direction.front)
+            end
         else
-            return
+            if reversed then
+                carriage1.disconnect_rolling_stock(defines.rail_direction.front)
+            else
+                carriage1.disconnect_rolling_stock(defines.rail_direction.back)
+            end
         end
         surface.play_sound{ path = "ftrainworks-decouple", position = position }
     else
@@ -161,6 +215,7 @@ return {
     calculate_back_center = calculate_back_center,
     flip_to_front_center = flip_to_front_center,
     find_nearest_couplers = find_nearest_couplers,
+    find_nearest_inserters = find_nearest_inserters,
     find_nearest_carriages = find_nearest_carriages,
     connect_disconnect_carriages = connect_disconnect_carriages
 }

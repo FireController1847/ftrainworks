@@ -26,6 +26,19 @@ local function create_inserter_data(inserter_unit_number)
     table.insert(storage.inserters, inserter_unit_number)
 end
 
+---Validates that the data structure for an inserter exists in storage.
+---If it does not exist, it is created.
+---@param inserter_unit_number uint64 The inserter entity unit number.
+local function validate_inserter_data(inserter_unit_number)
+    storage.inserters = storage.inserters or {}
+    for _, unit_number in ipairs(storage.inserters) do
+        if unit_number == inserter_unit_number then
+            return
+        end
+    end
+    table.insert(storage.inserters, inserter_unit_number)
+end
+
 ---Removes the data structure for an inserter from storage.
 ---Does not perform any validation.
 ---@param inserter_unit_number uint64 The inserter entity unit number.
@@ -48,23 +61,17 @@ end
 local function activate_inserters(train)
     if not (train and train.valid) then return end
     for _, carriage in pairs(train.carriages) do
-        local box = carriage.selection_box
-        local search_area = {
-            { box.left_top.x - 2, box.left_top.y + 1 },
-            { box.right_bottom.x + 2, box.right_bottom.y + 1 }
-        }
-        local nearby_inserters = carriage.surface.find_entities_filtered{
-            area = search_area,
-            name = "ftrainworks-coupler-inserter"
-        }
-
+        local nearby_inserters = util.find_nearest_inserters(carriage.surface, carriage.position, 6)
         for _, inserter in pairs(nearby_inserters) do
+            -- Validate inserter data
+            validate_inserter_data(inserter.unit_number)
+
             -- It seems like extra work, but now we're going to find nearby carriages
             -- and the coupler for this inserter to validate it can work.
-            local nearby_carriages = util.find_nearest_carriages(inserter.surface, inserter.position, 5)
+            local nearby_carriages = util.find_nearest_carriages(inserter.surface, inserter.drop_position, 6)
             if not nearby_carriages then return end
             if #nearby_carriages < 2 then return end
-            local nearby_couplers = util.find_nearest_couplers(inserter.surface, inserter.position, 2)
+            local nearby_couplers = util.find_nearest_couplers(inserter.surface, inserter.drop_position, 2)
             if nearby_couplers and #nearby_couplers > 0 then
                 active_inserters[inserter.unit_number] = {
                     train = train,
@@ -207,10 +214,13 @@ local function inserter_check_tick(inserter_unit_number, active_inserter_data)
 
         -- If the inserter already has a pickup target and drop target,
         -- destroy them first.
-        if inserter.pickup_target and inserter.pickup_target.valid then
-            inserter.pickup_target.destroy()
+        local item_on_ground = inserter.pickup_target
+        if item_on_ground and item_on_ground.valid and item_on_ground.name == "item-on-ground" then
+            if item_on_ground.stack and item_on_ground.stack.valid and item_on_ground.stack.name == "ftrainworks-coupler-stack" then
+                item_on_ground.destroy()
+            end
         end
-        if inserter.drop_target and inserter.drop_target.valid then
+        if inserter.drop_target and inserter.drop_target.valid and inserter.drop_target.name == "ftrainworks-coupler-container" then
             inserter.drop_target.destroy()
         end
 
@@ -270,7 +280,7 @@ local function inserter_animate_tick(inserter_unit_number, animating_inserter_da
     elseif animating_inserter_data.state == 1 and game.tick >= animating_inserter_data.delay then
         -- Perform the action
         if animating_inserter_data.action == "couple" then
-            local carriages = util.find_nearest_carriages(inserter.surface, inserter.position, 5)
+            local carriages = util.find_nearest_carriages(inserter.surface, inserter.drop_position, 6)
             local carriage1 = carriages and carriages[1]
             local carriage2 = carriages and carriages[2]
             if carriages and #carriages >= 2 then
@@ -284,7 +294,7 @@ local function inserter_animate_tick(inserter_unit_number, animating_inserter_da
                 animating_inserter_data.train = carriage1.train
             end
         elseif animating_inserter_data.action == "uncouple" then
-            local carriages = util.find_nearest_carriages(inserter.surface, inserter.position, 5)
+            local carriages = util.find_nearest_carriages(inserter.surface, inserter.drop_position, 6)
             local carriage1 = carriages and carriages[1]
             local carriage2 = carriages and carriages[2]
             if carriages and #carriages >= 2 then

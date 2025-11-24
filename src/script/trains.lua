@@ -25,6 +25,15 @@ local function create_carriage_data(carriage_unit_number)
     }
 end
 
+---Validates that the data structure for a carriage exists in storage.
+---@param carriage_unit_number uint64 The unit number of the carriage.
+local function validate_carriage_data(carriage_unit_number)
+    storage.carriages = storage.carriages or {}
+    if not storage.carriages[carriage_unit_number] then
+        create_carriage_data(carriage_unit_number)
+    end
+end
+
 ---Removes the data structure for a carriage from storage.
 ---Does not perform any validation.
 ---@param carriage_unit_number uint64 The unit number of the carriage.
@@ -89,6 +98,9 @@ local function validate_carriage_couplers(carriage)
     if not (carriage and carriage.valid) then return end
     local train = carriage.train
     if not (train and train.valid) then return end
+
+    -- Ensure carriage data exists
+    validate_carriage_data(carriage.unit_number)
 
     -- Determine our position of the carriage in the train
     local carriages = train.carriages
