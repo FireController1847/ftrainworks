@@ -6,8 +6,7 @@ local COUPLER_BOUNDING_BOX = prototypes.entity["ftrainworks-coupler"].selection_
 ----------------------------
 -- USED STORAGE VARIABLES --
 ----------------------------
--- storage.trains: Table mapping train IDs to their train data
---   storage.trains.couplers: Table mapping carriage unit numbers to their coupler data
+-- storage.carriages: Table mapping carriage unit numbers to their data
 ----------------------------
 
 --[[
