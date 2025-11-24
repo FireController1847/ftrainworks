@@ -1,34 +1,139 @@
 local registry = require("script.registry")
-local coupling = require("script.coupling")
+local util = require("script.util")
+
+----------------------------
+-- USED STORAGE VARIABLES --
+----------------------------
+-- storage.sensors: Table of all sensor entities indexed by unit number.
+----------------------------
+
+---@alias ActiveSensorData {train:LuaTrain, carriage:LuaEntity, sensor:LuaEntity}
+local active_sensors = {} ---@type table<uint64, ActiveSensorData> -- All active sensors with detected carriages indexed by sensor unit number.
 
 --[[
-    Sensor event handlers.
+    Data storage functions.
 --]]
-local function train_sensor_check_perform_action(entity)
-    -- START HIGH-PERFORMANT CODE --
 
-    if not (entity and entity.valid) then return end
-    local active_data = storage.sensor_active and storage.sensor_active[entity]
-    if not active_data then return end
-    local carriage = active_data.carriage
-    if not (carriage and carriage.valid) then return end
+---Creates the data structure for a sensor in storage.
+---Does not perform any validation.
+---@param sensor_unit_number uint64 The sensor entity unit number.
+local function create_sensor_data(sensor_unit_number)
+    storage.sensors = storage.sensors or {}
+    table.insert(storage.sensors, sensor_unit_number)
+end
+
+---Removes the data structure for a sensor from storage.
+---Does not perform any validation.
+---@param sensor_unit_number uint64 The sensor entity unit number.
+local function remove_sensor_data(sensor_unit_number)
+    if not storage.sensors then return end
+    for index, unit_number in ipairs(storage.sensors) do
+        if unit_number == sensor_unit_number then
+            table.remove(storage.sensors, index)
+            return
+        end
+    end
+end
+
+--[[
+    Sensor functions.
+--]]
+
+---Activates sensors for a train by checking which sensors are near its carriages.
+---@param train LuaTrain The train to check for nearby sensors.
+local function activate_sensors(train)
+    for _, carriage in pairs(train.carriages) do
+        local box = carriage.selection_box
+        local search_area = {
+            { box.left_top.x - 1, box.left_top.y },
+            { box.right_bottom.x + 1, box.right_bottom.y }
+        }
+        local nearby_sensors = carriage.surface.find_entities_filtered{
+            area = search_area,
+            name = "ftrainworks-sensor"
+        }
+        for _, sensor in pairs(nearby_sensors) do
+            active_sensors[sensor.unit_number] = {
+                train = train,
+                carriage = carriage,
+                sensor = sensor
+            }
+        end
+    end
+end
+
+---Deactivates a sensor.
+---@param sensor_unit_number uint64 The sensor entity unit number.
+---@param sensor LuaEntity The sensor entity.
+local function deactivate_sensor(sensor_unit_number, sensor)
+    active_sensors[sensor_unit_number] = nil
+    if sensor.valid then
+        -- Reset the control behavior
+        local control_behavior = sensor.get_or_create_control_behavior() ---@type LuaConstantCombinatorControlBehavior
+        if not (control_behavior and control_behavior.valid) then return end
+        if not control_behavior.enabled then control_behavior.enabled = true end
+        local section = control_behavior.get_section(1)
+        if not (section and section.is_manual) then return end -- TODO: Can we fix this in code?
+        if not section.active then section.active = true end
+
+        -- Clear all filters
+        if #section.filters > 0 then
+            section.filters = {}
+        end
+    end
+end
+
+---@param sensor_unit_number uint64 The sensor entity unit number.
+---@param active_sensor_data ActiveSensorData The active sensor data.
+local function sensor_report(sensor_unit_number, active_sensor_data)
+    -- Validate sensor
+    local sensor = active_sensor_data.sensor
+    if not (sensor and sensor.valid) then
+        remove_sensor_data(sensor_unit_number)
+        deactivate_sensor(sensor_unit_number, sensor)
+        return
+    end
+
+    -- Validate carriage
+    local carriage = active_sensor_data.carriage
+    if not (carriage and carriage.valid) then
+        deactivate_sensor(sensor_unit_number, sensor)
+        return
+    end
+
+    -- Validate train
+    local train = carriage.train
+    if not (train and train.valid) then
+        -- Invalid state? Can a carriage exist without a train?
+        deactivate_sensor(sensor_unit_number, sensor)
+        return
+    end
+    if train.speed ~= 0 then
+        -- Train is moving; deactivate sensor.
+        deactivate_sensor(sensor_unit_number, sensor)
+        return
+    end
+    if train.id ~= train.id then
+        -- Carriage is no longer part of the same train; update sensor data.
+        active_sensor_data.train = train
+        active_sensors[sensor_unit_number] = active_sensor_data
+    end
 
     -- Fetch the control behavior
-    local control_behavior = entity.get_or_create_control_behavior()
+    local control_behavior = sensor.get_or_create_control_behavior() ---@type LuaConstantCombinatorControlBehavior
     if not (control_behavior and control_behavior.valid) then return end
     if not control_behavior.enabled then control_behavior.enabled = true end
     local section = control_behavior.get_section(1)
-    if not (section and section.is_manual) then game.print("FATAL: Sensor control behavior section is not manual for sensor at position " .. serpent.block(entity.position)) return end
+    if not (section and section.is_manual) then return end -- TODO: Can we fix this in code?
     if not section.active then section.active = true end
 
     -- If the description says to do nothing, then exit
-    local read_type = string.find(entity.combinator_description, "read-type", 1, true) ~= nil
-    local read_contents = string.find(entity.combinator_description, "read-contents", 1, true) ~= nil
-    local read_fuel = string.find(entity.combinator_description, "read-fuel", 1, true) ~= nil
+    local read_type = string.find(sensor.combinator_description, "read-type", 1, true) ~= nil
+    local read_contents = string.find(sensor.combinator_description, "read-contents", 1, true) ~= nil
+    local read_fuel = string.find(sensor.combinator_description, "read-fuel", 1, true) ~= nil
     if not (read_type or read_contents or read_fuel) then
         if #section.filters > 0 then
             section.filters = {}
-            active_data.filters = {}
         end
         return
     end
@@ -126,8 +231,7 @@ local function train_sensor_check_perform_action(entity)
     end
 
     -- If this filters didn't change, don't update
-    -- TODO: Will this help or hurt performance?
-    local previous_filters = active_data.filters or {}
+    local previous_filters = section.filters or {}
     local filters_changed = false
     if #filters ~= #previous_filters then
         filters_changed = true
@@ -145,145 +249,154 @@ local function train_sensor_check_perform_action(entity)
     -- Emit all the filters
     if filters_changed then
         section.filters = filters
-        active_data.filters = filters
-    end
-
-    -- END HIGH-PERFORMANT CODE --
-end
-
-local function train_sensor_check_trains(train)
-    for _, carriage in pairs(train.carriages) do
-        local surface = carriage.surface
-        local position = carriage.position
-        local nearby_sensors = surface.find_entities_filtered{
-            name = "ftrainworks-sensor",
-            position = position,
-            radius = 3 -- Carriages are 6 tiles long, so this ensures we catch any sensors near the ends
-        }
-
-        -- Check if the sensors should perform their actions
-        for _, sensor in ipairs(nearby_sensors) do
-            if sensor and sensor.valid then
-                -- Add to active list
-                if not storage.sensor_active[sensor] then
-                    storage.sensor_active[sensor] = {
-                        train_id = train.id,
-                        carriage = carriage,
-                        filters = {}
-                    }
-
-                    -- Perform initial check
-                    train_sensor_check_perform_action(sensor)
-                end
-            end
-        end
     end
 end
 
-local function train_sensor_created(entity)
+--[[
+    Sensor event handlers.
+--]]
+
+---Handler for when a sensor is built.
+---@param sensor LuaEntity The sensor entity.
+local function on_sensor_built(sensor)
+    create_sensor_data(sensor.unit_number)
+
     -- Set default params
-    entity.combinator_description = "read-contents"
+    sensor.combinator_description = "read-contents"
 
-    -- If there is a train in front of us, make sure to add to active sensor list
-    local surface = entity.surface
-    local position = entity.position
-    local nearest_carriage = coupling.get_nearest_rolling_stock(surface, position, 6)
-    if nearest_carriage then
-        local train = nearest_carriage.train
-        if train and train.valid then
-            local train_state = storage.train_state[train.id]
-            if train_state and train_state.stopped then
-                -- Add to active inserter list
-                storage.sensor_active[entity] = {
-                    train_id = train.id,
-                    carriage = nearest_carriage,
-                    filters = {}
-                }
+    -- Check if a train is nearby
+    local nearby_carriages = util.find_nearest_carriages(sensor.surface, sensor.position, 5)
+    if not nearby_carriages then return end
+    if #nearby_carriages == 0 then return end
+    local closest_carriage = nearby_carriages[1]
+    activate_sensors(closest_carriage.train)
+end
 
-                -- Perform initial check
-                train_sensor_check_perform_action(entity)
-            end
-        end
+---Handler for when a sensor is removed.
+---@param sensor LuaEntity The sensor entity.
+local function on_sensor_removed(sensor)
+    active_sensors[sensor.unit_number] = nil
+    remove_sensor_data(sensor.unit_number)
+end
+
+--[[
+    Train state event handlers.
+--]]
+
+---Handler for when a train is created.
+---@param train LuaTrain The train that was created.
+local function on_train_created(train)
+    -- When a train is created, check for nearby sensors to activate.
+    activate_sensors(train)
+end
+
+---Handler for when a train's state changes.
+---@param train LuaTrain The train whose state has changed.
+local function on_train_state_changed(train)
+    if train.speed == 0 then
+        -- Train is stopped, find sensors which should be activated.
+        activate_sensors(train)
+    else
+        -- Sensors deactivate themselves when the train starts moving.
     end
 end
 
 --[[
-    Initialization and configuration events.
+    Registry event handlers.
 --]]
-registry.register(defines.events.on_init, function(event)
-    storage.sensor_active = {}
-end)
 
-registry.register(defines.events.on_configuration_changed, function(event)
-    storage.sensor_active = storage.sensor_active or {}
-end)
-
---[[
-    Entity creation events.
---]]
-registry.register({defines.events.on_built_entity, defines.events.on_robot_built_entity, defines.events.on_space_platform_built_entity, defines.events.on_script_raised_built, defines.events.on_script_raised_revive}, function(event)
+---@param event EventData.on_built_entity
+registry.register(defines.events.on_built_entity, function(event)
     local entity = event.entity
     if not (entity and entity.valid) then return end
     if entity.name == "ftrainworks-sensor" then
-        train_sensor_created(entity)
+        on_sensor_built(entity)
     end
 end)
 
---[[
-    Train state events.
---]]
+---@param event EventData.on_robot_built_entity
+registry.register(defines.events.on_robot_built_entity, function(event)
+    local entity = event.entity
+    if not (entity and entity.valid) then return end
+    if entity.name == "ftrainworks-sensor" then
+        on_sensor_built(entity)
+    end
+end)
+
+---@param event EventData.script_raised_built
+registry.register(defines.events.script_raised_built, function(event)
+    local entity = event.entity
+    if not (entity and entity.valid) then return end
+    if entity.name == "ftrainworks-sensor" then
+        on_sensor_built(entity)
+    end
+end)
+
+---@param event EventData.on_entity_died
+registry.register(defines.events.on_entity_died, function(event)
+    local entity = event.entity
+    if not (entity and entity.valid) then return end
+    if entity.name == "ftrainworks-sensor" then
+        on_sensor_removed(entity)
+    end
+end)
+
+---@param event EventData.on_player_mined_entity
+registry.register(defines.events.on_player_mined_entity, function(event)
+    local entity = event.entity
+    if not (entity and entity.valid) then return end
+    if entity.name == "ftrainworks-sensor" then
+        on_sensor_removed(entity)
+    end
+end)
+
+---@param event EventData.on_robot_mined_entity
+registry.register(defines.events.on_robot_mined_entity, function(event)
+    local entity = event.entity
+    if not (entity and entity.valid) then return end
+    if entity.name == "ftrainworks-sensor" then
+        on_sensor_removed(entity)
+    end
+end)
+
+---@param event EventData.script_raised_destroy
+registry.register(defines.events.script_raised_destroy, function(event)
+    local entity = event.entity
+    if not (entity and entity.valid) then return end
+    if entity.name == "ftrainworks-sensor" then
+        on_sensor_removed(entity)
+    end
+end)
+
+---@param event EventData.on_train_created
+registry.register(defines.events.on_train_created, function(event)
+    local train = event.train
+    if not (train and train.valid) then return end
+    on_train_created(train)
+end)
+
+---@param event EventData.on_train_changed_state
 registry.register(defines.events.on_train_changed_state, function(event)
     local train = event.train
     if not (train and train.valid) then return end
-    local state = storage.train_state[train.id]
-    if not state then return end -- If our mod hasn't registered the custom state, ignore
-    if state.stopped then
-        train_sensor_check_trains(train)
-    else
-        -- Remove from active sensor list
-        for sensor, active_data in pairs(storage.sensor_active) do
-            if active_data.train_id == train.id then
-                storage.sensor_active[sensor] = nil
-
-                -- Reset control behavior
-                if sensor and sensor.valid then
-                    local control_behavior = sensor.get_or_create_control_behavior()
-                    if control_behavior and control_behavior.valid then
-                        local section = control_behavior.get_section(1)
-                        if section and section.is_manual then
-                            section.filters = {}
-                        end
-                    end
-                end
-            end
-        end
-    end
+    on_train_state_changed(train)
 end)
 
---[[
-    Per-tick event.
---]]
 local first_tick = true
+---@param event EventData.on_tick
 registry.register(defines.events.on_tick, function(event)
     if first_tick then
         first_tick = false
 
-        -- On first tick, re-check all stopped trains to register sensors
-        storage.sensor_active = {}
-        local train_manager = game.train_manager
-        local trains = train_manager.get_trains{}
-        for _, train in pairs(trains) do
-            local state = storage.train_state[train.id]
-            if state and state.stopped then
-                train_sensor_check_trains(train)
+        -- Activate sensors for all existing trains.
+        for _, train in ipairs(game.train_manager.get_trains{}) do
+            if train.speed == 0 then
+                activate_sensors(train)
             end
         end
     end
 
-    -- If there are active sensors, process them
-    -- NOTE: The circuit network runs per-tick, so we need to do this every tick
-    --       I wish I could do this less frequently, but Factorio doesn't provide a way to hook into circuit network updates
-    for sensor, _ in pairs(storage.sensor_active) do
-        train_sensor_check_perform_action(sensor)
+    for sensor_unit_number, active_sensor_data in pairs(active_sensors) do
+        sensor_report(sensor_unit_number, active_sensor_data)
     end
 end)

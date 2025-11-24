@@ -1,4 +1,8 @@
-require("script.coupling")
-require("script.inserters")
+local registry = require("script.registry")
+
+require("script.trains")
+require("script.inserter")
 require("script.sensor")
 require("script.gui")
+
+registry.execute()

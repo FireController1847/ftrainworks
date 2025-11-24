@@ -1,4 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.0
+Date: November 24th, 2025
+  Major Features:
+    - Completely reworked the control logic across the mod to improve stability and reduce desyncs in multiplayer.
+    - Refactored inserter animation handling to ensure proper state management.
+    - Improved train coupler logic to better handle edge cases when connecting and disconnecting carriages.
+    - Added additional validation checks when trains are modified to ensure inserters and sensors are correctly registered.
+    - Updated documentation to reflect changes in functionality and usage.
+
+---------------------------------------------------------------------------------------------------
 Version: 1.0.3
 Date: November 22nd, 2025
   Major Features:

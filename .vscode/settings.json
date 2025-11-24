@@ -13,5 +13,9 @@
         "prototypes",
         "combinator_circuit_wire_max_distance",
         "circuit_connector_definitions"
-    ]
+    ],
+    "Lua.workspace.userThirdParty": [
+        "/Users/firecontroller1847/Library/Application Support/Code/User/workspaceStorage/b5e879d035f0e1028fc7abccfaf711c8/justarandomgeek.factoriomod-debug/sumneko-3rd"
+    ],
+    "Lua.workspace.checkThirdParty": "ApplyInMemory"
 }

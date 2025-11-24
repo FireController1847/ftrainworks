@@ -1,10 +1,11 @@
 local registry = require("script.registry")
-local inserters = require("script.inserters")
-local coupling = require("script.coupling")
+local util = require("script.util")
+
 
 --[[
     GUI management for the train coupler inserter.
 --]]
+---@param player LuaPlayer The player to close the GUI for.
 local function close_coupler_gui(player)
     local screen = player.gui.screen
     local gui = screen["ftrainworks-coupler-inserter-gui-window"]
@@ -14,6 +15,8 @@ local function close_coupler_gui(player)
     end
 end
 
+---@param player LuaPlayer The player to update the GUI for.
+---@param entity LuaEntity The coupler inserter entity.
 local function update_coupler_gui(player, entity)
     if not (player and player.valid) then return end
     if not (entity and entity.valid) then return end
@@ -49,7 +52,7 @@ local function update_coupler_gui(player, entity)
         end
     end
     if is_connected then
-        local nearest_coupler = coupling.get_nearest_coupler(entity.surface, entity.position, 3)
+        local nearest_coupler = util.find_nearest_couplers(entity.surface, entity.position, 3)
         if nearest_coupler then
             ui_status_image.sprite = "utility/status_working"
             ui_status_label.caption = {"other.ftrainworks-working"}
@@ -83,11 +86,10 @@ local function update_coupler_gui(player, entity)
         ui_config_prioritize_coupling.enabled = false
         ui_config_prioritize_uncoupling.enabled = false
     end
-
-    -- Perform movement check
-    inserters.coupler_inserter_check_perform_action(entity)
 end
 
+---@param player LuaPlayer The player to open the GUI for.
+---@param entity LuaEntity The coupler inserter entity.
 local function open_coupler_gui(player, entity)
     -- Close the default gui, destroy existing gui if present
     player.opened = nil
@@ -254,6 +256,7 @@ end
 --[[
     GUI management for the train sensor.
 --]]
+---@param player LuaPlayer The player to close the GUI for.
 local function close_train_sensor_gui(player)
     local screen = player.gui.screen
     local gui = screen["ftrainworks-sensor-gui-window"]
@@ -263,6 +266,8 @@ local function close_train_sensor_gui(player)
     end
 end
 
+---@param player LuaPlayer The player to update the GUI for.
+---@param entity LuaEntity The train sensor entity.
 local function update_train_sensor_gui(player, entity)
     if not (player and player.valid) then return end
     if not (entity and entity.valid) then return end
@@ -293,7 +298,7 @@ local function update_train_sensor_gui(player, entity)
         end
     end
     if is_connected then
-        local nearest_rolling_stock = coupling.get_nearest_rolling_stock(entity.surface, entity.position, 3)
+        local nearest_rolling_stock = util.find_nearest_carriages(entity.surface, entity.position, 3)
         if nearest_rolling_stock then
             ui_status_image.sprite = "utility/status_working"
             ui_status_label.caption = {"other.ftrainworks-working"}
@@ -315,6 +320,8 @@ local function update_train_sensor_gui(player, entity)
     end
 end
 
+---@param player LuaPlayer The player to open the GUI for.
+---@param entity LuaEntity The train sensor entity.
 local function open_train_sensor_gui(player, entity)
     -- Close the default gui, destroy existing gui if present
     player.opened = nil
@@ -488,6 +495,7 @@ end
 --[[
     GUI event hooks.
 --]]
+---@param event EventData.on_gui_opened
 registry.register(defines.events.on_gui_opened, function(event)
     if event.gui_type == defines.gui_type.entity then
         local entity = event.entity
@@ -502,6 +510,7 @@ registry.register(defines.events.on_gui_opened, function(event)
     end
 end)
 
+---@param event EventData.on_gui_click
 registry.register(defines.events.on_gui_click, function(event)
     local element = event.element
     if not (element and element.valid) then return end
@@ -515,6 +524,7 @@ registry.register(defines.events.on_gui_click, function(event)
     end
 end)
 
+---@param event EventData.on_gui_checked_state_changed
 registry.register(defines.events.on_gui_checked_state_changed, function(event)
     local element = event.element
     if not (element and element.valid) then return end
@@ -593,6 +603,7 @@ registry.register(defines.events.on_gui_checked_state_changed, function(event)
     end
 end)
 
+---@param event EventData.on_gui_closed
 registry.register(defines.events.on_gui_closed, function(event)
     if event.gui_type == defines.gui_type.custom then
         local player = game.get_player(event.player_index)
