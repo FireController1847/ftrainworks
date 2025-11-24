@@ -7,6 +7,7 @@ local COUPLER_BOUNDING_BOX = prototypes.entity["ftrainworks-coupler"].selection_
 -- USED STORAGE VARIABLES --
 ----------------------------
 -- storage.carriages: Table mapping carriage unit numbers to their data
+--    storage.carriages.couplers: Table mapping "front" and "back" to coupler unit numbers
 ----------------------------
 
 --[[
@@ -60,7 +61,7 @@ local function validate_carriage_coupler(carriage, position, location)
 
         local distance = ((coupler_entity.position.x - position.x) ^ 2 + (coupler_entity.position.y - position.y) ^ 2) ^ 0.5
         if distance > 0.1 then
-            game.print("trains.lua#validate_carriage_coupler(): " .. location .. " coupler for carriage unit number " .. carriage.unit_number .. " is out of position, moving.", { skip = defines.print_skip.never, game_state = false })
+            --game.print("trains.lua#validate_carriage_coupler(): " .. location .. " coupler for carriage unit number " .. carriage.unit_number .. " is out of position, moving.", { skip = defines.print_skip.never, game_state = false })
             coupler_entity.teleport(position)
         end
     else
@@ -71,7 +72,7 @@ local function validate_carriage_coupler(carriage, position, location)
             force = carriage.force
         }
         if not (coupler_entity and coupler_entity.valid) then
-            game.print("trains.lua#validate_carriage_coupler(): Failed to create " .. location .. " coupler for carriage unit number " .. carriage.unit_number, { skip = defines.print_skip.never, game_state = false })
+            --game.print("trains.lua#validate_carriage_coupler(): Failed to create " .. location .. " coupler for carriage unit number " .. carriage.unit_number, { skip = defines.print_skip.never, game_state = false })
             return
         end
         carriage_data.couplers[location] = coupler_entity.unit_number
@@ -300,6 +301,8 @@ registry.register("ftrainworks-left-click", function(event)
 end)
 
 return {
+    on_carriage_built = on_carriage_built,
+    on_carriage_removed = on_carriage_removed,
     invalidate_carriage_couplers = invalidate_carriage_couplers,
     validate_carriage_couplers = validate_carriage_couplers
 }
