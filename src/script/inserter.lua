@@ -302,12 +302,15 @@ local function inserter_animate_tick(inserter_unit_number, animating_inserter_da
             end
             local manual_mode
             local schedule
+            local interrupts
             if train_to_preserve then
                 manual_mode = train_to_preserve.manual_mode
                 schedule = train_to_preserve.schedule
+                interrupts = train_to_preserve.get_schedule().get_interrupts()
             else
                 manual_mode = false
                 schedule = nil
+                interrupts = {}
             end
 
             -- Perform the connection change
@@ -319,22 +322,32 @@ local function inserter_animate_tick(inserter_unit_number, animating_inserter_da
 
             -- Bump schedule if and only if the current stop changes due to the connection change
             if schedule ~= nil then
-                local next = schedule.current + 1
-                local len = #schedule.records
-                if next > len then
-                    next = 1
+                local current = schedule.records[schedule.current]
+                if current.temporary then
+                    table.remove(schedule.records, schedule.current)
                 end
-                schedule.current = next
+                if #schedule.records == 0 then
+                    schedule = nil
+                else
+                    local next = schedule.current + 1
+                    local len = #schedule.records
+                    if next > len then
+                        next = 1
+                    end
+                    schedule.current = next
+                end
             end
 
             -- Restore train state
             if carriage1.train and (#carriage1.train.locomotives.front_movers + #carriage1.train.locomotives.back_movers) > 0 then
                 carriage1.train.schedule = schedule
                 carriage1.train.manual_mode = manual_mode
+                carriage1.train.get_schedule().set_interrupts(interrupts)
             end
             if carriage2.train and (#carriage2.train.locomotives.front_movers + #carriage2.train.locomotives.back_movers) > 0 then
                 carriage2.train.schedule = schedule
                 carriage2.train.manual_mode = manual_mode
+                carriage2.train.get_schedule().set_interrupts(interrupts)
             end
 
             -- choose one to assign the train

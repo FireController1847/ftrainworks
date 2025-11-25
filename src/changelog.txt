@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.4
+Date: November 24th, 2025
+  Minor Features:
+    - Fixed removing temporary stops from the train schedule when bumping.
+
+---------------------------------------------------------------------------------------------------
 Version: 1.1.3
 Date: November 24th, 2025
   Minor Features:
