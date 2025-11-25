@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.3
+Date: November 24th, 2025
+  Minor Features:
+    - Added bumping the train schedule and restoring manual_mode/automatic_mode after coupling/uncoupling.
+
+---------------------------------------------------------------------------------------------------
 Version: 1.1.2
 Date: November 24th, 2025
   Minor Features:

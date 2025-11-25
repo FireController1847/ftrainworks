@@ -279,34 +279,66 @@ local function inserter_animate_tick(inserter_unit_number, animating_inserter_da
         end
     elseif animating_inserter_data.state == 1 and game.tick >= animating_inserter_data.delay then
         -- Perform the action
+        local action
         if animating_inserter_data.action == "couple" then
-            local carriages = util.find_nearest_carriages(inserter.surface, inserter.drop_position, 6)
-            local carriage1 = carriages and carriages[1]
-            local carriage2 = carriages and carriages[2]
-            if carriages and #carriages >= 2 then
-                trains.invalidate_carriage_couplers(carriage1)
-                trains.invalidate_carriage_couplers(carriage2)
-                util.connect_disconnect_carriages(carriage1, carriage2, inserter.surface, inserter.position, "connect")
-                trains.validate_carriage_couplers(carriage1)
-                trains.validate_carriage_couplers(carriage2)
-
-                -- choose one to assign the train
-                animating_inserter_data.train = carriage1.train
+            action = "connect"
+        else
+            action = "disconnect"
+        end
+        local carriages = util.find_nearest_carriages(inserter.surface, inserter.drop_position, 6)
+        local carriage1 = carriages and carriages[1]
+        local carriage2 = carriages and carriages[2]
+        if carriages and #carriages >= 2 then
+            -- Preserve the manual state of the train with the most locomotives
+            local t1_locomotives = #carriage1.train.locomotives.front_movers + #carriage1.train.locomotives.back_movers
+            local t2_locomotives = #carriage2.train.locomotives.front_movers + #carriage2.train.locomotives.back_movers
+            local train_to_preserve
+            if t1_locomotives >= t2_locomotives and carriage1.train then
+                train_to_preserve = carriage1.train
+            elseif carriage2.train then
+                train_to_preserve = carriage2.train
+            else
+                train_to_preserve = nil
             end
-        elseif animating_inserter_data.action == "uncouple" then
-            local carriages = util.find_nearest_carriages(inserter.surface, inserter.drop_position, 6)
-            local carriage1 = carriages and carriages[1]
-            local carriage2 = carriages and carriages[2]
-            if carriages and #carriages >= 2 then
-                trains.invalidate_carriage_couplers(carriage1)
-                trains.invalidate_carriage_couplers(carriage2)
-                util.connect_disconnect_carriages(carriage1, carriage2, inserter.surface, inserter.position, "disconnect")
-                trains.validate_carriage_couplers(carriage1)
-                trains.validate_carriage_couplers(carriage2)
-
-                -- choose one to assign the train
-                animating_inserter_data.train = carriage1.train
+            local manual_mode
+            local schedule
+            if train_to_preserve then
+                manual_mode = train_to_preserve.manual_mode
+                schedule = train_to_preserve.schedule
+            else
+                manual_mode = false
+                schedule = nil
             end
+
+            -- Perform the connection change
+            trains.invalidate_carriage_couplers(carriage1)
+            trains.invalidate_carriage_couplers(carriage2)
+            util.connect_disconnect_carriages(carriage1, carriage2, inserter.surface, inserter.position, action)
+            trains.validate_carriage_couplers(carriage1)
+            trains.validate_carriage_couplers(carriage2)
+
+            -- Bump schedule if and only if the current stop changes due to the connection change
+            if schedule ~= nil then
+                local next = schedule.current + 1
+                local len = #schedule.records
+                if next > len then
+                    next = 1
+                end
+                schedule.current = next
+            end
+
+            -- Restore train state
+            if carriage1.train and (#carriage1.train.locomotives.front_movers + #carriage1.train.locomotives.back_movers) > 0 then
+                carriage1.train.schedule = schedule
+                carriage1.train.manual_mode = manual_mode
+            end
+            if carriage2.train and (#carriage2.train.locomotives.front_movers + #carriage2.train.locomotives.back_movers) > 0 then
+                carriage2.train.schedule = schedule
+                carriage2.train.manual_mode = manual_mode
+            end
+
+            -- choose one to assign the train
+            animating_inserter_data.train = carriage1.train
         end
 
         -- Delay again
