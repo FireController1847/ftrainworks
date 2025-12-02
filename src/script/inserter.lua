@@ -56,6 +56,30 @@ end
     Inserter functions.
 --]]
 
+---Activates a single inserter by checking which inserters are near its carriages.
+---@param train LuaTrain The train to check for nearby inserters.
+---@param inserter LuaEntity The inserter entity.
+local function activate_inserter(train, inserter)
+    -- Validate inserter data
+    validate_inserter_data(inserter.unit_number)
+
+    -- It seems like extra work, but now we're going to find nearby carriages
+    -- and the coupler for this inserter to validate it can work.
+    local nearby_carriages = util.find_nearest_carriages(inserter.surface, inserter.drop_position, 6)
+    if not nearby_carriages then return end
+    if #nearby_carriages < 2 then return end
+    local nearby_couplers = util.find_nearest_couplers(inserter.surface, inserter.drop_position, 2)
+    if nearby_couplers and #nearby_couplers > 0 then
+        active_inserters[inserter.unit_number] = {
+            train = train,
+            carriage1 = nearby_carriages[1],
+            carriage2 = nearby_carriages[2],
+            coupler = nearby_couplers[1],
+            inserter = inserter
+        }
+    end
+end
+
 ---Activates inserters for a train by checking which inserters are near its carriages.
 ---@param train LuaTrain The train to check for nearby inserters.
 local function activate_inserters(train)
@@ -63,24 +87,7 @@ local function activate_inserters(train)
     for _, carriage in pairs(train.carriages) do
         local nearby_inserters = util.find_nearest_inserters(carriage.surface, carriage.position, 6)
         for _, inserter in pairs(nearby_inserters) do
-            -- Validate inserter data
-            validate_inserter_data(inserter.unit_number)
-
-            -- It seems like extra work, but now we're going to find nearby carriages
-            -- and the coupler for this inserter to validate it can work.
-            local nearby_carriages = util.find_nearest_carriages(inserter.surface, inserter.drop_position, 6)
-            if not nearby_carriages then return end
-            if #nearby_carriages < 2 then return end
-            local nearby_couplers = util.find_nearest_couplers(inserter.surface, inserter.drop_position, 2)
-            if nearby_couplers and #nearby_couplers > 0 then
-                active_inserters[inserter.unit_number] = {
-                    train = train,
-                    carriage1 = nearby_carriages[1],
-                    carriage2 = nearby_carriages[2],
-                    coupler = nearby_couplers[1],
-                    inserter = inserter
-                }
-            end
+            activate_inserter(train, inserter)
         end
     end
 end
@@ -289,68 +296,10 @@ local function inserter_animate_tick(inserter_unit_number, animating_inserter_da
         local carriage1 = carriages and carriages[1]
         local carriage2 = carriages and carriages[2]
         if carriages and #carriages >= 2 then
-            -- Preserve the manual state of the train with the most locomotives
-            local t1_locomotives = #carriage1.train.locomotives.front_movers + #carriage1.train.locomotives.back_movers
-            local t2_locomotives = #carriage2.train.locomotives.front_movers + #carriage2.train.locomotives.back_movers
-            local train_to_preserve
-            if t1_locomotives >= t2_locomotives and carriage1.train then
-                train_to_preserve = carriage1.train
-            elseif carriage2.train then
-                train_to_preserve = carriage2.train
-            else
-                train_to_preserve = nil
-            end
-            local manual_mode
-            local schedule
-            local interrupts
-            if train_to_preserve then
-                manual_mode = train_to_preserve.manual_mode
-                schedule = train_to_preserve.schedule
-                interrupts = train_to_preserve.get_schedule().get_interrupts()
-            else
-                manual_mode = false
-                schedule = nil
-                interrupts = {}
-            end
+            -- Perform the coupler action
+            trains.perform_coupler_action(carriage1, carriage2, inserter.surface, inserter.position, action)
 
-            -- Perform the connection change
-            trains.invalidate_carriage_couplers(carriage1)
-            trains.invalidate_carriage_couplers(carriage2)
-            util.connect_disconnect_carriages(carriage1, carriage2, inserter.surface, inserter.position, action)
-            trains.validate_carriage_couplers(carriage1)
-            trains.validate_carriage_couplers(carriage2)
-
-            -- Bump schedule if and only if the current stop changes due to the connection change
-            if schedule ~= nil then
-                local current = schedule.records[schedule.current]
-                if current.temporary then
-                    table.remove(schedule.records, schedule.current)
-                end
-                if #schedule.records == 0 then
-                    schedule = nil
-                else
-                    local next = schedule.current + 1
-                    local len = #schedule.records
-                    if next > len then
-                        next = 1
-                    end
-                    schedule.current = next
-                end
-            end
-
-            -- Restore train state
-            if carriage1.train and (#carriage1.train.locomotives.front_movers + #carriage1.train.locomotives.back_movers) > 0 then
-                carriage1.train.schedule = schedule
-                carriage1.train.manual_mode = manual_mode
-                carriage1.train.get_schedule().set_interrupts(interrupts)
-            end
-            if carriage2.train and (#carriage2.train.locomotives.front_movers + #carriage2.train.locomotives.back_movers) > 0 then
-                carriage2.train.schedule = schedule
-                carriage2.train.manual_mode = manual_mode
-                carriage2.train.get_schedule().set_interrupts(interrupts)
-            end
-
-            -- choose one to assign the train
+            -- Choose one to assign the train
             animating_inserter_data.train = carriage1.train
         end
 
@@ -534,3 +483,17 @@ registry.register_nth_tick(35, function()
         inserter_check_tick(inserter_unit_number, active_inserter_data)
     end
 end)
+
+return {
+    create_inserter_data = create_inserter_data,
+    validate_inserter_data = validate_inserter_data,
+    remove_inserter_data = remove_inserter_data,
+    activate_inserters = activate_inserters,
+    deactivate_inserter = deactivate_inserter,
+    inserter_check_tick = inserter_check_tick,
+    inserter_animate_tick = inserter_animate_tick,
+    on_inserter_built = on_inserter_built,
+    on_inserter_removed = on_inserter_removed,
+    on_train_created = on_train_created,
+    on_train_state_changed = on_train_state_changed
+}

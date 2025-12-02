@@ -1,4 +1,29 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.8
+Date: December 1st, 2025
+  Minor Features:
+    - Fixed coupler-inserters accidentally short-circuiting the carriage loop when a validation check fails.
+
+---------------------------------------------------------------------------------------------------
+Version: 1.1.7
+Date: December 1st, 2025
+  Minor Features:
+    - Fixed an issue where couplers were not being validated correctly after coupling/uncoupling.
+    - Fixed an issue where the coupler validiation logic did not correctly handle reversed carriages.
+    - Fixed an issue where the coupling/uncoupling logic did not correctly handle reversed carriages.
+    - Resolved train sensors not retaining settings when being placed using a blueprint.
+    - Resolved inability to disable "Read carriage contents" in the train sensor GUI.
+    - Unified connect/disconnect logic to a single function to reduce differing behaviors.
+    - Added debug command to 'reset' the couplers on a train for testing purposes.
+
+---------------------------------------------------------------------------------------------------
+Version: 1.1.6
+Date: November 24th, 2025
+  Minor Features:
+    - Fixed skipping temporary stops when bumping the train schedule after coupling/uncoupling.
+    - That'll teach me to properly test my mod before publishing it.
+
+---------------------------------------------------------------------------------------------------
 Version: 1.1.5
 Date: November 24th, 2025
   Minor Features:

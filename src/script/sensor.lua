@@ -276,7 +276,9 @@ local function on_sensor_built(sensor)
     create_sensor_data(sensor.unit_number)
 
     -- Set default params
-    sensor.combinator_description = "read-contents"
+    if sensor.combinator_description == "" then
+        sensor.combinator_description = " read-contents"
+    end
 
     -- Check if a train is nearby
     local nearby_carriages = util.find_nearest_carriages(sensor.surface, sensor.position, 5)
@@ -414,3 +416,15 @@ registry.register(defines.events.on_tick, function(event)
         sensor_report(sensor_unit_number, active_sensor_data)
     end
 end)
+
+return {
+    validate_sensor_data = validate_sensor_data,
+    remove_sensor_data = remove_sensor_data,
+    activate_sensors = activate_sensors,
+    deactivate_sensor = deactivate_sensor,
+    sensor_report = sensor_report,
+    on_sensor_built = on_sensor_built,
+    on_sensor_removed = on_sensor_removed,
+    on_train_created = on_train_created,
+    on_train_state_changed = on_train_state_changed
+}

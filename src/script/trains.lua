@@ -94,7 +94,6 @@ end
 ---Validates the couplers for a given carriage.
 ---@param carriage LuaEntity The carriage entity.
 local function validate_carriage_couplers(carriage)
-    --game.print("trains.lua#validate_carriage_couplers(): Validating couplers for carriage unit number " .. carriage.unit_number, { skip = defines.print_skip.never, game_state = false })
     if not (carriage and carriage.valid) then return end
     local train = carriage.train
     if not (train and train.valid) then return end
@@ -113,15 +112,16 @@ local function validate_carriage_couplers(carriage)
     end
     if not i then return end
 
-    -- Determine our orientation relative to our next connected rolling stock
-    -- Then determine the back_center position of the carriage based on that orientation
+    -- Determine if we're flipped relative to the train's front direction
     local orientation = carriage.orientation
-    local next = carriages[i + 1]
-    if next then
-        if carriage.get_connected_rolling_stock(defines.rail_direction.back) == next then
+    local prev = carriages[i - 1]
+    if prev then
+        if carriage.get_connected_rolling_stock(defines.rail_direction.front) == prev then
             orientation = (orientation + 0.5) % 1
         end
     end
+
+    -- Determine the back center position of the carriage based on orientation
     local back_center = util.calculate_back_center(carriage.selection_box, COUPLER_BOUNDING_BOX, orientation)
 
     -- Validate front coupler (only on first carriage)
@@ -153,6 +153,76 @@ local function invalidate_carriage_couplers(carriage)
     -- Save updated carriage data
     carriage_data.couplers = {}
     storage.carriages[carriage.unit_number] = carriage_data
+end
+
+--[[
+    Coupler action functions.
+--]]
+local function perform_coupler_action(carriage1, carriage2, surface, position, action)
+    -- Preserve the manual state of the train with the most locomotives
+    local t1_locomotives = #carriage1.train.locomotives.front_movers + #carriage1.train.locomotives.back_movers
+    local t2_locomotives = #carriage2.train.locomotives.front_movers + #carriage2.train.locomotives.back_movers
+    local train_to_preserve
+    if t1_locomotives >= t2_locomotives and carriage1.train then
+        train_to_preserve = carriage1.train
+    elseif carriage2.train then
+        train_to_preserve = carriage2.train
+    else
+        train_to_preserve = nil
+    end
+    local manual_mode
+    local schedule
+    local interrupts
+    if train_to_preserve then
+        manual_mode = train_to_preserve.manual_mode
+        schedule = train_to_preserve.schedule
+        interrupts = train_to_preserve.get_schedule().get_interrupts()
+    else
+        manual_mode = false
+        schedule = nil
+        interrupts = {}
+    end
+
+    -- Perform the connection change
+    invalidate_carriage_couplers(carriage1)
+    invalidate_carriage_couplers(carriage2)
+    util.connect_disconnect_carriages(carriage1, carriage2, surface, position, action)
+    validate_carriage_couplers(carriage1)
+    validate_carriage_couplers(carriage2)
+
+    -- Bump schedule if and only if the current stop changes due to the connection change
+    if schedule ~= nil then
+        local current = schedule.records[schedule.current]
+        if current.temporary then
+            -- this APPARENTLY auto-bumps the current stop for us
+            -- because that relationship is clear :rolling_eyes:
+            table.remove(schedule.records, schedule.current)
+            if #schedule.records == 0 then
+                schedule = nil
+            elseif schedule.current > #schedule.records then
+                schedule.current = 1
+            end
+        else
+            local next = schedule.current + 1
+            local len = #schedule.records
+            if next > len then
+                next = 1
+            end
+            schedule.current = next
+        end
+    end
+
+    -- Restore train state
+    if carriage1.train and (#carriage1.train.locomotives.front_movers + #carriage1.train.locomotives.back_movers) > 0 then
+        carriage1.train.schedule = schedule
+        carriage1.train.manual_mode = manual_mode
+        carriage1.train.get_schedule().set_interrupts(interrupts)
+    end
+    if carriage2.train and (#carriage2.train.locomotives.front_movers + #carriage2.train.locomotives.back_movers) > 0 then
+        carriage2.train.schedule = schedule
+        carriage2.train.manual_mode = manual_mode
+        carriage2.train.get_schedule().set_interrupts(interrupts)
+    end
 end
 
 --[[
@@ -209,16 +279,12 @@ local function on_left_click(event)
     if selected.name == "ftrainworks-coupler" then
         local surface = selected.surface
         local position = selected.position
-        local carriages = util.find_nearest_carriages(surface, position, 5)
+        local carriages = util.find_nearest_carriages(surface, position, 6)
         if not carriages then return end
         if #carriages < 2 then return end
         local carriage1 = carriages[1]
         local carriage2 = carriages[2]
-        invalidate_carriage_couplers(carriage1)
-        invalidate_carriage_couplers(carriage2)
-        util.connect_disconnect_carriages(carriage1, carriage2, surface, position, "toggle")
-        validate_carriage_couplers(carriage1)
-        validate_carriage_couplers(carriage2)
+        perform_coupler_action(carriage1, carriage2, selected.surface, selected.position, "toggle")
     end
 end
 
@@ -316,5 +382,6 @@ return {
     on_carriage_built = on_carriage_built,
     on_carriage_removed = on_carriage_removed,
     invalidate_carriage_couplers = invalidate_carriage_couplers,
-    validate_carriage_couplers = validate_carriage_couplers
+    validate_carriage_couplers = validate_carriage_couplers,
+    perform_coupler_action = perform_coupler_action
 }
