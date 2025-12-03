@@ -231,7 +231,7 @@ local function sensor_report(sensor_unit_number, active_sensor_data)
         if read_fuel then
             -- Read fuel and emit signals
             local fuel_inventory = carriage.get_fuel_inventory()
-            -- if not (fuel_inventory and fuel_inventory.valid) then return end
+
             -- Fix: Support locomotives without fuel inventory (e.g. void energy sources)
             if fuel_inventory and fuel_inventory.valid then
                 -- Loop through fuel contents and set filters
