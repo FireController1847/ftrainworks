@@ -200,7 +200,7 @@ local function sensor_report(sensor_unit_number, active_sensor_data)
         if read_type then
             -- Emit carriage type signal
             table.insert(filters, {
-                value = { type = "item", name = "artillery-wagon", quality = "normal" },
+                value = { type = "item", name = carriage.name, quality = "normal" },
                 min = 1,
                 max = 1
             })
@@ -223,7 +223,7 @@ local function sensor_report(sensor_unit_number, active_sensor_data)
         if read_type then
             -- Emit carriage type signal
             table.insert(filters, {
-                value = { type = "item", name = "locomotive", quality = "normal" },
+                value = { type = "item", name = carriage.name, quality = "normal" },
                 min = 1,
                 max = 1
             })
